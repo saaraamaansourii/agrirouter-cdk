@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package gateway_service;
+
+// Event sent by gateway whenever endpoint sends new capabilities
+// 
+// These events would be sent via Kafka topic.
+// Topic name: set_endpoint_capability.event
+message SetEndpointCapabilitiesEvent {
+  enum Direction { // Specifies which way the messages are to flow for the capabilities when sending the message this shoudl be aligned with the application certification
+      UNKNOWN = 0;
+      SEND = 1;
+      RECEIVE = 2;
+      SEND_RECEIVE = 3;
+  }
+
+  enum PushNotification {
+      DISABLED = 0;
+      ENABLED = 1;
+      ENABLED_HIGH_FREQUENCY = 2;
+  }
+
+  message Capability {
+      string technical_message_type = 1;      // Technical Message type from agrirouter
+      Direction direction = 2;                // Specifies which way the messages are to flow for the capability
+  }
+  repeated Capability capabilities = 1;       // List of supported capabilities. Would be a subset or all of those supported by the application
+  string app_certification_id = 2;            // Application ID from the agrirouter      
+  string app_certification_version_id = 3;    // Application Certification Version ID from the agrirouter
+  PushNotification enable_push_notifications = 4;     // Enables/disables push notifications for the endpoint
+
+  google.protobuf.Timestamp timestamp = 5;    // Timestamp of the incoming message
+  string application_message_id = 6;          // Client generated Message ID it would use to uniquly identify the message it has sent
+  string endpoint_id = 7;                     // Identifier of the endpoint that have sent command
+  string message_id = 8;                      // Unique Agrirouter generated message identifier
+  string vcu_endpoint_id = 9;                 // Identifier of the VCU that have actually sent command if it was forwarded by telemetry platform
+}

@@ -1,0 +1,18 @@
+# Requirements for validation scripts
+# Install with: pip install -r requirements.txt
+
+# AWS SDK for retrieving credentials and CloudFormation outputs
+boto3>=1.35.0
+
+# PostgreSQL database driver (for validate-db-connections.py)
+psycopg2-binary>=2.9.9
+
+# SQL Server database driver (for validate-db-connections.py)
+pymssql>=2.3.1
+
+# Kafka Python client (for validate-kafka-connection.py)
+kafka-python>=2.0.2
+
+# Protocol Buffers compiler and runtime (for simulate-kafka-messages.py)
+protobuf>=4.25.0
+grpcio-tools>=1.59.0

@@ -1,0 +1,24 @@
+type: object
+required:
+  - source
+  - recipient
+  - route_information_types
+properties:
+  id:
+    type: string
+    format: uuid
+    description: Unique identifier for the route
+  source:
+    type: string
+    format: uuid
+    description: The id of the sending endpoint
+  recipient:
+    type: string
+    format: uuid
+    description: The id of the receiving endpoint
+  route_information_types:
+    type: array
+    description: Identifiers of information types that can be sent over this route
+    items:
+      type: string
+      format: uuid

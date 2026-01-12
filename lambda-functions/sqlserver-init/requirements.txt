@@ -1,0 +1,5 @@
+# SQL Server Lambda Function Dependencies
+# These are provided via Lambda Layer (built by CDK)
+
+pymssql==2.2.11
+boto3>=1.28.0

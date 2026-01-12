@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "gateway_service/validity_period.proto";
+
+package gateway_service;
+
+message QueryFeedMessageHeadersEvent {
+  repeated string message_ids = 1;              // List of agrirouter message IDs to specifically query for
+  repeated string senders = 2;                  // List of sender endpoint ID's to specifically query for
+  gateway_service.ValidityPeriod validity_period = 3;           // The validity period for which to query within
+
+  google.protobuf.Timestamp timestamp = 4;    // Timestamp of the incoming message
+  string application_message_id = 5;          // Client generated Message ID it would use to uniquly identify the message it has sent
+  string endpoint_id = 6;                     // Identifier of the endpoint that have sent command
+  string message_id = 7;                      // Unique Agrirouter generated message identifier
+  string vcu_endpoint_id = 8;                 // Identifier of the VCU that have actually sent command if it was forwarded by telemetry platform
+}

@@ -1,0 +1,166 @@
+openapi: 3.1.1
+info:
+  title: Internal Endpoint Service API
+  version: 1.0.0
+  description: |
+    The API to manange endpoints on agrirouter internally. 
+    Designed to be called only from agrirouter API gateway.
+  contact:
+    name: DKE-Data GmbH & Co. KG
+    email: info@dke-data.com
+    url: https://dke-data.com
+servers:
+  - url: http://endpoint.localhost:{port}
+    variables:
+      port:
+        default: "8000"
+  - url: http://localhost:{port}
+    description: Localhost Server
+    variables:
+      port:
+        default: "8080"
+  - url: https://endpoint-service-internal.qa.agrirouter.farm
+    description: QA Server
+  - url: https://endpoint-service-internal.prod.agrirouter.farm
+    description: Production Server
+
+paths:
+  /internal/endpoints:
+    post:
+      summary: Create a new endpoint or update an existing one internally
+      description: |
+        This resource allows internal services to create a new 
+        endpoint or update an existing one in the agrirouter system.
+      operationId: internalCreateEndpoint
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - application_id
+                - software_version_id
+                - external_endpoint_id
+                - endpoint_type
+              properties:
+                external_endpoint_id:
+                  type: string
+                  description: The external ID of the endpoint
+                application_id:
+                  type: string
+                  format: uuid
+                software_version_id:
+                  type: string
+                  format: uuid
+                endpoint_type:
+                  $ref: "#/components/schemas/endpoint_type"
+      responses:
+        "201":
+          description: Successfully created a new endpoint
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/endpoint"
+        "200":
+          description: Endpoint already exists, updated the existing endpoint
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/endpoint"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+security:
+  - AgrirouterInternal: []
+
+components:
+  securitySchemes:
+    AgrirouterInternal:
+      type: mutualTLS
+      description: |
+        This security scheme is used for internal calls to the agrirouter endpoint service.
+        It requires mutual TLS authentication with a valid agrirouter API gateway certificate.
+  parameters:
+    x-tenant-id:
+      in: header
+      name: x-tenant-id
+      schema:
+        type: string
+      required: true
+      description: The tenant id to scope the request to
+      examples:
+        system-tests-tenant:
+          value: "00000000-0000-0000-0000-000000000001"
+        user1-tenant:
+          value: "980e3993-1cbc-428c-bce0-2d98fc8e5436"
+  schemas:
+    endpoint_type:
+      type: string
+      enum:
+        - farming_software
+        - telemetry_platform
+        - communication_unit
+        - virtual_communication_unit
+      
+    endpoint:
+      type: object
+      required:
+        - id
+        - external_endpoint_id
+        - tenant_id
+        - name
+        - description
+        - endpoint_type
+        - application_id
+        - software_version_id
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the endpoint
+        external_endpoint_id:
+          type: string
+          description: External identifier for the endpoint
+        tenant_id:
+          type: string
+          description: Identifier for the associated tenant
+        name:
+          type: string
+          description: Name of the endpoint
+        description:
+          type: string
+          description: Description of the endpoint
+        endpoint_type:
+          $ref: "#/components/schemas/endpoint_type"
+        application_id:
+          type: string
+          format: uuid
+          description: Identifier for the application this endpoint is associated with
+        software_version_id:
+          type: string
+          format: uuid
+          description: Identifier for the version of application software this endpoint known to use
+        owner_endpoint_id:
+          type: string
+          format: uuid
+          description: Identifier of the endpoint owning this endpoint
+        created_at:
+          type: string
+          format: date-time
+          description: Date and time the endpoint was created

@@ -1,0 +1,9 @@
+syntax = "proto3";
+package endpoint_service;
+
+message EndpointRevoked {
+    string tenant_id = 1;             // Tenant to whom email should be sent about its belonging revoked endpoints
+    string endpoint_name = 2;         // Endpoint Name of the endpoint that has been revoked by the application provider
+    string application_name = 3;      // Application Name of the endpoint that has been revoked
+}
+

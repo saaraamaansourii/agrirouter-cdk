@@ -1,0 +1,244 @@
+openapi: "3.0.2"
+
+info:
+  contact:
+    email: info@dke-data.com
+    name: DKE Data
+    url: https://dke-data.com
+  title: Agrirouter HTTP Gateway
+  version: "1.0"
+  description: |
+    This service provides access to endpoint data of Agrirouter via HTTP.
+servers:
+  - url: http://localhost:{port}
+    variables:
+      port:
+        default: "8081"
+  - url: https://gateway-service.dev.agrirouter.farm
+    description: Development Server
+  - url: https://gateway-service.qa.agrirouter.farm
+    description: QA Server
+  - url: https://gateway-service.prod.agrirouter.farm
+    description: Production Server
+
+tags:
+  - name: "Outbox"
+  - name: "Inbox"
+
+paths:
+  /iot/gateway/rest/commands/{deviceAlternateId}:
+    get:
+      operationId: receiveMessagesLegacy
+      description: |
+        This resource is used to receive messages from the Agrirouter outbox.
+        The messages are retrieved from the outbox of the device with the given 
+        deviceAlternateId (aka endpoint id).
+        Note: this is same as /outbox, but is kept for backward compatibility.
+      tags:
+        - "Outbox"
+      summary: Receive messages from Agrirouter outbox
+      parameters:
+        - name: deviceAlternateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Accept
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Messages are retrieved from outbox
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceivedMessages"
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Request is invalid
+        '401':
+          description: Authentication failed
+        '403':
+          description: Authorization failed
+        '500':
+          description: Server Side Error
+
+  /iot/gateway/rest/measures/{deviceAlternateId}:
+    post:
+      operationId: sendMessagesLegacy
+      summary: Send messages to Agrirouter inbox
+      description: |
+        This resource is used to send messages to the Agrirouter inbox.
+        The messages are forwarded to the inbox of the device with the given 
+        deviceAlternateId (aka endpoint id).
+        Note: this is same as /inbox, but is kept for backward compatibility.
+      tags:
+        - "Inbox"
+      parameters:
+        - name: deviceAlternateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SentMessages"
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Inbox forwarded the messages
+        '400':
+          description: Request is invalid
+        '401':
+          description: Authentication failed
+        '403':
+          description: Authorization failed
+        '500':
+          description: Server Side Error
+
+  /outbox/{deviceAlternateId}:
+    get:
+      operationId: receiveMessages
+      description: |
+        This resource is used to receive messages from the Agrirouter outbox.
+        The messages are retrieved from the outbox of the device with the given 
+        deviceAlternateId (aka endpoint id).
+      tags:
+        - "Outbox"
+      summary: Receive messages from Agrirouter outbox
+      parameters:
+        - name: deviceAlternateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Accept
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Messages are retrieved from outbox
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceivedMessages"
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Request is invalid
+        '401':
+          description: Authentication failed
+        '403':
+          description: Authorization failed
+        '500':
+          description: Server Side Error
+
+  /inbox/{deviceAlternateId}:
+    post:
+      operationId: sendMessages
+      summary: Send messages to Agrirouter inbox
+      description: |
+        This resource is used to send messages to the Agrirouter inbox.
+        The messages are forwarded to the inbox of the device with the given 
+        deviceAlternateId (aka endpoint id).
+      tags:
+        - "Inbox"
+      parameters:
+        - name: deviceAlternateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SentMessages"
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Inbox forwarded the messages
+        '400':
+          description: Request is invalid
+        '401':
+          description: Authentication failed
+        '403':
+          description: Authorization failed
+        '500':
+          description: Server Side Error
+
+components:
+  schemas:
+    Command:
+      type: object
+      properties:
+        message:
+          type: string
+    ReceivedMessages:
+      type: array
+      items: 
+        $ref: "#/components/schemas/ReceivedMessage"
+    ReceivedMessage:
+      type: object
+      properties:
+        sensorAlternateId:
+          type: string
+        capabilityAlternateId:
+          type: string
+        command:
+          $ref: "#/components/schemas/Command"
+    ObjectMessage:
+      type: object
+      properties:
+        message:
+          type: string
+        timestamp:
+          type: string
+    MessageData:
+      type: string
+    MessageTimestamp:
+      type: number
+    ArrayMessage:
+      type: array
+      items:
+        oneOf:
+          - $ref: "#/components/schemas/MessageData"
+          - $ref: "#/components/schemas/MessageTimestamp"
+    Message:
+      oneOf:
+        - $ref: "#/components/schemas/ObjectMessage"
+        - $ref: "#/components/schemas/ArrayMessage"
+    SentMessages:
+      type: object
+      properties:
+        sensorAlternateId:
+          type: string
+        capabilityAlternateId:
+          type: string
+        measures:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"

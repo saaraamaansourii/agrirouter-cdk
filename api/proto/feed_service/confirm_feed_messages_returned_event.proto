@@ -1,0 +1,27 @@
+syntax = "proto3";
+package feed_service;
+
+import "feed_service/message_for_metrics_event.proto";
+
+// Return Event for message deletion, key is endpoint ID
+message ConfirmFeedMessagesReturnedEvent {
+    string application_message_id = 1;
+    string message_id = 2;
+    string endpoint_id = 3;
+
+    enum ConfirmStatus {
+    CONFIRM_STATUS_UNKNOWN = 0;
+    ACK = 1;
+    FAILURE = 2;  
+    FAILURE_INFORMATION_MISSING = 3;
+    FAILURE_QUERYDATA_MALFORMED = 4;
+  }
+
+    ConfirmStatus status = 4;
+    repeated string confirmedAndDeletedMessageIds = 5;
+    repeated string notFoundMessageIds = 6;
+    string vcu_endpoint_id = 7;                 // Identifier of the VCU that have actually sent command if it was forwarded by telemetry platform
+
+    repeated feed_service.MessageForMetricsEvent confirmed_messages = 8; // detailed message information of the confirmed messages for analytics purposes
+}
+

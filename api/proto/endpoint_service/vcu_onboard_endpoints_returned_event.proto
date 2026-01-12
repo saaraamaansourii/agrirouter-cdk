@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package endpoint_service;
+
+import "endpoint_service/vcu_message.proto";
+
+message VcuOnboardEndpointsReturnedEvent {
+  message EndpointRegistrationDetails {
+      string id = 1;                                            // External ID from the cloud provider
+      string device_alternate_id = 2;                           // The ID for the device used for managing the communication channel with the cloud provider for the associated agrirouter account.
+      string sensor_alternate_id = 3;                           // The ID to use for messages related to a specific virtualized endpoint. Would always be 1..1 with the External ID
+      string capability_alternate_id = 4;                       // The ID for the capability of the sensorAlternateId required for the payload which is communicated with the gateway
+      string endpoint_id = 5;                                   // The ID of the endpoint within the agrirouter
+  }
+
+  message Failures {
+      string id = 1;                                            // External ID from the cloud provider
+      Message reason = 2;                                       // Information as to why it failed
+  }
+
+  repeated EndpointRegistrationDetails onboarded_endpoints = 1; // Collection of details to enable communication of the virtualized endpoints the cloud provider is integrating with the agrirouter for the account   
+  repeated Failures failures = 2;                               // For any which were not able to be onboarded the information would be here along with the external ID provided from the cloud provider        
+  OnboardRequestStatus status = 3;                                     // Status of the request
+  string application_message_id = 4;                            // Client generated Message ID it would use to uniquly identify the message it has sent
+  string message_id = 5;                                        // Unique Agrirouter generated message identifier
+  string endpoint_id = 6;                                       // ID of the sender endpoint within the agrirouter
+}
+
+enum OnboardRequestStatus {
+  OnboardRequestStatus_UNKNOWN = 0;                                    // Don't use, reserved
+  OnboardRequestStatus_SUCCESS = 1;                                    // All onboardings were successful
+  OnboardRequestStatus_PARTIAL_SUCCESS = 2;                            // Some onboardings failed
+  OnboardRequestStatus_FAILURE = 3;                                    // All of onboardings failed
+  OnboardRequestStatus_FAILURE_NOT_TELEMETRY_PLATFORM = 4;             // Sending endpoint cannot onboard other endpoints
+  OnboardRequestStatus_NO_ENDPOINTS_TO_ONBOARD = 5;                    // The provided onboarding requests list was empty
+}
+

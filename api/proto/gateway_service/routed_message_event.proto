@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "common.proto";
+
+package gateway_service;
+
+message RoutedMessageEvent {
+    string message_id = 1;
+    string source_id = 2; // Source can be any sending endpoint like TP, CU, VCU etc.
+    string message_type = 3;
+    int64 application_seq_number = 4;
+    repeated string recipient_ids = 5;
+    string team_set_context_id = 6;
+    google.protobuf.Timestamp timestamp = 7;
+    agrirouter.common.ChunkComponent chunk_component = 8;
+    agrirouter.common.Metadata metadata = 9;
+    int64 payload_size = 10;
+    string payload_file_key = 11;
+    google.protobuf.Timestamp created_at = 12;
+    string application_message_id = 13;          // Client generated Message ID it would use to uniquly identify the message it has sent
+    string tenant_id = 14;                       // since source and recipient are in the same tenant, this accounts for both
+}

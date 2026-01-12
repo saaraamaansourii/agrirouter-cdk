@@ -1,0 +1,881 @@
+openapi: 3.0.3
+info:
+  title: Endpoint Service API
+  version: 1.0.0
+  description: The API to manange user endpoints on agrirouter.
+servers:
+  - url: http://endpoint.localhost:{port}
+    variables:
+      port:
+        default: "8000"
+  - url: http://localhost:{port}
+    description: Localhost Server
+    variables:
+      port:
+        default: "8080"
+  - url: https://endpoint-service.dev.agrirouter.farm
+    description: Development Server
+  - url: https://endpoint-service.qa.agrirouter.farm
+    description: QA Server
+  - url: https://endpoint-service.prod.agrirouter.farm
+    description: Production Server
+  - url: https://onboard.my-agrirouter.com # this would only become active when CNAME is set in autumn 2024
+    description: Public URL Production Server
+
+security:
+  - openIdLocalhost:
+      - "farmer"
+  - openIdLocalK3d:
+      - "farmer"
+  - openIdDev:
+      - "farmer"
+  - openIdQa:
+      - "farmer"
+
+paths:
+  /regcodes:
+    post:
+      summary: Create a registration code for CU onboarding
+      parameters:
+        - in: header
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+      responses:
+        "201":
+          description: Regcode is generated and returned
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/regcode_response"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "401":
+          description: Unauthorized
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /api/v1.0/registration/onboard:
+    post:
+      summary: Onboard communication unit
+      security:
+        - regCodeBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/cu_onboarding_request"
+      responses:
+        "201":
+          description: Success; Analyse onboarding result to get started
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/onboarding_response"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "401":
+          description: Unauthorized; meaning that one of the given header parameters is wrong. Refer to the error message
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /api/v1.0/registration/onboard/verify:
+    post:
+      summary: The verification request is used to actually check if the endpoint is for the desired application and account before actually onboarding it.
+      security:
+        - regCodeBearer: []
+      parameters:
+        - in: header
+          name: X-Agrirouter-ApplicationId
+          schema:
+            type: string
+          required: true
+        - in: header
+          name: X-Agrirouter-Signature
+          schema:
+            type: string
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/cu_onboarding_request"
+                - $ref: "#/components/schemas/onboard_verify_request"
+      responses:
+        "200":
+          description: The endpoint is verified and ready for onboarding
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/onboard_verify_response"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "401":
+          description: The request was unauthorized; the provided registration code was unknown
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+  /api/v1.0/registration/onboard/request:
+    post:
+      summary: To onboard a new endpoint, the endpoint has to send an onboarding request providing the registration code to agrirouter.
+      security:
+        - regCodeBearer: []
+      parameters:
+        - in: header
+          name: X-Agrirouter-ApplicationId
+          schema:
+            type: string
+          required: true
+        - in: header
+          name: X-Agrirouter-Signature
+          schema:
+            type: string
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/cu_onboarding_request"
+                - $ref: "#/components/schemas/onboard_verify_request"
+      responses:
+        "201":
+          description: The endpoint is verified and ready for onboarding
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/onboarding_response"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "401":
+          description: The request was unauthorized; the provided registration code was unknown
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+  /api/v1.0/registration/onboard/revoke:
+   delete:
+      summary: Revoke an endpoint of a farming software or telemetry platform
+      operationId: revokeEndpoint
+      parameters:
+        - in: header
+          name: X-Agrirouter-ApplicationId
+          schema:
+            type: string
+          required: true
+          description: "Application ID that has been returned by the verify request and that the endpoints have to be instances of"
+        - in: header
+          name: X-Agrirouter-Signature
+          schema:
+            type: string
+          required: true
+          description: "Signature to verify this request"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/revoke_request"
+      responses:
+        "204":
+          $ref: ../common/responses/no_content.yaml
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "401":
+          $ref: ../common/responses/unauthorized.yaml
+  /endpoints:
+    get:
+      summary: Get all endpoints
+      parameters:
+        - in: header # remove the header for endpoints that are not scoped to a specific tenant
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+      responses:
+        "200":
+          description: Successfully retrieved
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/endpoint"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+  /endpoints/{id}:
+    get:
+      summary: Get an endpoint by id
+      parameters:
+        - in: header # remove the header for endpoints that are not scoped to a specific tenant
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: "Endpoint id to retrieve"
+      responses:
+        "200":
+          description: Successfully retrieved
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/endpoint"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    put:
+      summary: Update an endpoint by id
+      parameters:
+        - in: header # remove the header for endpoints that are not scoped to a specific tenant
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: "Endpoint id to update"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/changed_endpoint"
+      responses:
+        "200":
+          description: Successfully updated
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/endpoint"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    delete:
+      summary: Delete an endpoint by id
+      parameters:
+        - in: header # remove the header for endpoints that are not scoped to a specific tenant
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: "Endpoint id to delete"
+      responses:
+        "204":
+          $ref: ../common/responses/no_content.yaml
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /redirect-uri-validation:
+    post:
+      summary: Validate the redirect URI before authorization
+      description: "This resource is used to validate the redirect URI to show user correct feedback before authorizing the application to onboard endpoint."
+      operationId: validateRedirectUri
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                redirect_uri:
+                  description: The redirect URI to validate
+                  type: string
+                  format: uri
+                application_id:
+                  description: The application ID to validate the redirect URI for
+                  type: string
+                  format: uuid
+              required:
+                - redirect_uri
+                - application_id
+      responses:
+        "200":
+          description: Redirect URI is valid
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /endpoints/authorize:
+    post:
+      summary: Authorize an endpoint with application id
+      operationId: endpointAuthorise
+      parameters:
+        - in: header # remove the header for endpoints that are not scoped to a specific tenant
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                applicationId:
+                  type: string
+                  format: uuid
+                state:
+                  type: string
+                redirect_uri:
+                  type: string
+                  format: uri
+                response_type:
+                  type: string
+                  enum:
+                    - verify
+                    - onboard
+                action:
+                  type: string
+                  enum:
+                    - accept
+                    - reject
+              required:
+                - applicationId
+                - state
+                - response_type
+                - action
+      responses:
+        "200":
+          description: Redirect to the redirect_uri with the state and token as query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/redirect_to"
+
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /router-devices:
+    post:
+      summary: Create a new router device
+      parameters:
+        - in: header # remove the header for endpoints that are not scoped to a specific tenant
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+              required:
+                - name
+      security:
+        - openIdLocalK3d:
+            - "developer"
+        - openIdLocalhost:
+            - "developer"
+        - openIdDev:
+            - "developer"
+        - openIdQa:
+            - "developer"
+      responses:
+        "201":
+          description: Successfully created a new router device
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/router_device_response"
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    get:
+      summary: Get all router device for developer's tenant
+      parameters:
+        - in: header # remove the header for endpoints that are not scoped to a specific tenant
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+      security:
+        - openIdLocalK3d:
+            - "developer"
+        - openIdLocalhost:
+            - "developer"
+        - openIdDev:
+            - "developer"
+        - openIdQa:
+            - "developer"
+      responses:
+        "200":
+          description: Successfully returned list of router devices
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/router_device_response"
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /router-devices/{id}/certificate:
+    get:
+      summary: Retrieve certificate for a router device
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the router device
+          schema:
+            type: string
+            format: uuid
+        - name: certType
+          in: query
+          required: true
+          description: Type of certificate
+          schema:
+            type: string
+            enum: [P12, PEM]
+      security:
+        - openIdLocalK3d:
+            - "developer"
+        - openIdLocalhost:
+            - "developer"
+        - openIdDev:
+            - "developer"
+        - openIdQa:
+            - "developer"
+      responses:
+        "201":
+          description: Successfully returned certificate and connection details of router device
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/router_device_certificate_details"
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /router-devices/{id}:
+    parameters:
+      - in: header
+        name: x-tenant-id
+        schema:
+          type: string
+        required: true
+        description: "Tenant id to scope the request to"
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+        description: "ID of the router device to update"
+    put:
+      summary: Update the name of a router device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+              required:
+                - name
+      security:
+        - openIdLocalK3d:
+            - "developer"
+        - openIdLocalhost:
+            - "developer"
+        - openIdDev:
+            - "developer"
+        - openIdQa:
+            - "developer"
+      responses:
+        "200":
+          description: Successfully updated the name of the router device
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    delete:
+      summary: Remove router device and return if deletion was successful
+      security:
+        - openIdLocalK3d:
+            - "developer"
+        - openIdLocalhost:
+            - "developer"
+        - openIdDev:
+            - "developer"
+        - openIdQa:
+            - "developer"
+      responses:
+        "204":
+          $ref: ../common/responses/no_content.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+components:
+  parameters:
+    x-tenant-id:
+      in: header
+      name: x-tenant-id
+      schema:
+        type: string
+      required: true
+      description: The tenant id to scope the request to
+      examples:
+        system-tests-tenant:
+          value: "00000000-0000-0000-0000-000000000001"
+        user1-tenant:
+          value: "980e3993-1cbc-428c-bce0-2d98fc8e5436"
+  schemas:
+    redirect_to:
+      type: object
+      properties:
+        redirect_to:
+          type: string
+          description: "Redirect URI"
+          format: uri
+    regcode_response:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: The generated registration code
+    onboarding_connection_criteria:
+      type: object
+      description: Includes all information required for further communication
+      required:
+        - gatewayId
+        - measures
+        - commands
+      properties:
+        gatewayId:
+          type: string
+          enum: ["2", "3"]
+          description: Assigned gateway; 2= MQTT, 3=REST
+        host:
+          type: string
+          description: "MQTT only: The broker address"
+        port:
+          type: integer
+          description: "MQTT only: The broker port"
+        measures:
+          type: string
+          description: "Endpoint URL of the inbox or Topic, when using MQTT"
+        commands:
+          type: string
+          description: "Endpoint URL of the outbox or Topic, when using MQTT"
+        clientId:
+          type: string
+          description: "MQTT only: The ClientID of the endpoint"
+    onboarding_authentication:
+      type: object
+      description: Includes all authentication information
+      required:
+        - certificate
+        - secret
+        - type
+      properties:
+        certificate:
+          type: string
+          description: The certificate required for communication; Public AND Private Key
+        secret:
+          type: string
+          description: The passkey for the certificate
+        type:
+          type: string
+          enum: [PEM, P12]
+          description: Type of Certificate; PEM or P12 (short for PKCS#12)
+    onboarding_response:
+      type: object
+      required:
+        - authentication
+        - connectionCriteria
+        - deviceAlternateId
+        - sensorAlternateId
+        - capabilityAlternateId
+      properties:
+        authentication:
+          $ref: "#/components/schemas/onboarding_authentication"
+        capabilityAlternateId:
+          type: string
+          description: A value that just has to be saved and sent in several scenarios; From legacy implementation, not used anymore
+        connectionCriteria:
+          $ref: "#/components/schemas/onboarding_connection_criteria"
+        deviceAlternateId:
+          type: string
+          description: The device ID used to mark the source of a message from this device and as endpointId
+        sensorAlternateId:
+          type: string
+          description: The deviceID used to mark the source of the communication from this device
+    cert_type:
+      type: string
+      enum: [PEM, P12]
+      description: "Type of the desired certificate; Possible values: PEM,P12"
+    gateways:
+      type: string
+      enum: ["2", "3"]
+      description: 'The desired communication protocol after onboarding; 2: MQTT, 3: REST; Example: "2"'
+    cu_onboarding_request:
+      type: object
+      required:
+        - id
+        - applicationId
+        - certificationVersionId
+        - gatewayId
+      properties:
+        id:
+          type: string
+          description: The unique and persistent ID of the endpoint; we advise to create a URN
+        applicationId:
+          type: string
+          format: uuid
+          description: The application ID for the application, provided in the agrirouter developer UI
+        certificationVersionId:
+          type: string
+          format: uuid
+          description: The ID of the certification software version provided in the agrirouter developer UI
+        gatewayId:
+          $ref: "#/components/schemas/gateways"
+        certificateType:
+          $ref: "#/components/schemas/cert_type"
+    onboard_verify_request:
+      type: object
+      required:
+        - id
+        - applicationId
+        - certificationVersionId
+        - gatewayId
+        - UTCTimestamp
+        - timeZone
+      properties:
+        UTCTimestamp:
+          type: string
+          format: date-time
+          description: "The current UTC timestamp"
+        timeZone:
+          type: string
+          description: "The current time zone"
+          example: "+02:00"
+    onboard_verify_response:
+      type: object
+      properties:
+        accountId:
+          type: string
+          description: The account id of the endpoint
+          format: uuid
+    changed_endpoint:
+      $ref: "./changed_endpoint.yaml"
+    endpoint:
+      $ref: "./endpoint.yaml"
+    router_device_response:
+      type: object
+      description: Newly created router device
+      required:
+        - name
+        - id
+        - connection_details
+        - createdAt
+      properties:
+        name:
+          type: string
+          description: Router device's name
+        id:
+          type: string
+          format: uuid
+          description: "Unique identifier for router device, equal to deviceAlternateID"
+        connection_details:
+          $ref: "#/components/schemas/router_device_connection_details"
+        createdAt:
+          type: string
+          format: date-time
+          description: "Timestamp of creation"
+    router_device_connection_details:
+      type: object
+      description: Newly created router device
+      required:
+        - clientId
+        - port
+        - gatewayId
+        - host
+      properties:
+        clientId:
+          type: string
+          format: uuid
+          description: Router device's client ID
+        port:
+          type: string
+          description: "MQTT only: The broker port"
+        gatewayId:
+          $ref: "#/components/schemas/gateways"
+        host:
+          type: string
+          description: Host of router device
+    router_device_certificate_details:
+      type: object
+      description: Information transmitted regarding the certificate and connection of a router device
+      required:
+        - deviceAlternateId
+        - connectionCriteria
+        - authentication
+      properties:
+        connectionCriteria:
+          $ref: "#/components/schemas/router_device_connection_details"
+        authentication:
+          $ref: "#/components/schemas/onboarding_authentication"
+        deviceAlternateId:
+          type: string
+          format: uuid
+          description: The device ID used to mark the source of a message from this device and as endpointId
+    revoke_request:
+      type: object
+      description: Information about endpoints that should be revoked
+      required:
+      - accountId
+      - endpointIds
+      - UTCTimestamp
+      - timeZone
+      properties:
+        accountId:
+          type: string
+          format: uuid
+          description: "ID of the tenant which the endpoints should belong to"
+        endpointIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: "The endpoints that should be revoked"
+        UTCTimestamp:
+          type: string
+          format: date-time
+          description: "The current UTC timestamp"
+        timeZone:
+          type: string
+          description: "The current time zone"
+          example: "+02:00"
+ 
+  securitySchemes:
+    regCodeBearer: # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+    openIdLocalhost:
+      $ref: ../common/security/openid_local.yaml
+    openIdDev:
+      $ref: ../common/security/openid_dev.yaml
+    openIdQa:
+      $ref: ../common/security/openid_qa.yaml

@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package endpoint_service;
+
+import "common.proto";
+
+enum EndpointType {
+  ENDPOINT_TYPE_UNKNOWN = 0;
+  AGRICULTURAL_SOFTWARE = 1;
+  COMMUNICATION_UNIT = 2;
+  VIRTUAL_COMMUNICATION_UNIT = 3;
+  TELEMETRY_PLATFORM = 4;
+}
+
+enum GatewayId {
+  UNKNOWN_GATEWAY_ID = 0;
+  NONE = 1; // value would be used for virtual communication units
+  MQTT = 2;
+  HTTP = 3;
+  G4 = 4; // The new RESTful API gateway
+}
+
+// Event when a message type is changing
+message Endpoint {
+  agrirouter.common.StateChangeMetadata metadata = 1;
+  EndpointState state = 2;
+}
+
+message EndpointState {
+    string id = 1;
+    string tenantId = 2;
+    string name = 3;
+    string description = 4;
+    EndpointType endpointType = 5;
+    bool isDefaultGroup = 6;
+    string appVersionId = 7;
+    bool isDeactivated = 8;
+    string externalId = 9;
+    string machineClassId = 10;
+    string designator = 11;
+    repeated int32 machineDDIs = 12 [packed=true];
+    string originalEndpointId = 13;
+    string pairedTenantId = 14;
+    string pairingId = 15;
+    bool isSubscribed = 16;
+    string virtualCuOwnerId = 17;
+    string versionTag = 18;
+    GatewayId gatewayId = 19;
+    string applicationId = 20;
+    string deviceAlternateId = 21;
+}

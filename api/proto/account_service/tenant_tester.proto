@@ -1,0 +1,23 @@
+syntax = "proto3";
+package account_service;
+
+import "common.proto";
+
+message TenantTester {
+  agrirouter.common.StateChangeMetadata metadata = 1;
+  TesterState state = 2;
+}
+
+message TesterState {
+  enum TesterStatus {
+    TESTER_STATUS_UNKNOWN = 0;
+    CREATED = 1;
+    ACCEPTED = 2;
+    REJECTED = 3;
+  }
+  
+  string id = 1;
+  string owner_tenant_id = 2;
+  string tester_tenant_id = 3;
+  TesterStatus status = 4;
+}

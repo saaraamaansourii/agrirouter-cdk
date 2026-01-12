@@ -1,0 +1,124 @@
+openapi: 3.0.3
+
+info:
+  title: Oauth Service
+  version: "1.0"
+  description: agrirouter OAuth service internal API
+  contact:
+    name: DKE-Data GmbH & Co. KG
+    email: info@dke-data.com
+    url: https://dke-data.com
+servers:
+  - url: http://oauth.localhost:{port}
+    variables:
+      port:
+        default: "8000"
+  - url: http://localhost:{port}
+    variables:
+      port:
+        default: "8080"
+  - url: https://oauth-service.qa.agrirouter.farm
+    description: qacl
+  - url: https://oauth-service.prod.agrirouter.farm
+    description: prod
+
+security:
+  - openIdLocalhost:
+      - "farmer"
+  - openIdLocalK3d:
+      - "farmer"
+  - openIdQa:
+      - "farmer"
+
+paths:
+  /authorizations:
+    get:
+      operationId: getAuthorizations
+      description: Retrieves all authorizations for a tenant
+      parameters:
+        - in: header
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/authorization"
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    post:
+      operationId: grantAuthorization
+      description: Authorizes an application in a tenant
+      parameters:
+        - in: header
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/authorization"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/authorization"
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+        "403":
+          description: Cannot access the resource
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+components:
+  schemas:
+    authorization:
+      type: object
+      properties:
+        scope:
+          type: string
+          description: The oauth scope of the authorization, defines the access granted to application within the tenant
+          enum:
+            - "endpoints:manage"
+        tenantId:
+          type: string
+          format: uuid
+          description: The unique identifier of the tenant
+        applicationId:
+          type: string
+          format: uuid
+          description: The unique identifier of the application
+      required:
+        - scope
+        - tenantId
+        - applicationId
+  securitySchemes:
+    openIdLocalhost:
+      $ref: ../common/security/openid_local.yaml
+    openIdQa:
+      $ref: ../common/security/openid_qa.yaml

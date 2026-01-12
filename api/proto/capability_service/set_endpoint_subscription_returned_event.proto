@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package capability_service;
+
+// Return Event to set subscription of an endpoint, key is endpoint ID
+message SetEndpointSubscriptionReturnedEvent {
+    string application_message_id = 1;
+    string message_id = 2;
+
+    enum Status {
+      STATUS_UNKNOWN = 0;
+      ACK = 1;        
+      ACK_WITH_FAILURE = 2;          //map to VAL_000006, including failed subscription message types
+      INTERNAL_ERROR = 3; // map to ACK with failure since internal processing of message failed
+    }
+
+    Status status = 3;
+    string endpoint_id = 4; 
+    repeated string failedMessageTypes = 5;
+    string vcu_endpoint_id = 6;                 // Identifier of the VCU that have actually sent command if it was forwarded by telemetry platform
+}
+

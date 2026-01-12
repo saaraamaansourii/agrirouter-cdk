@@ -1,0 +1,100 @@
+allOf:
+  - $ref: "./changed_endpoint.yaml"
+  - type: object
+    required: # is all of this mandatory?
+      - name
+      - id
+      - created_at
+      - tenant_id
+      - description
+      - is_default_group
+      - app_version_id
+      - external_id
+      - machine_class_id
+      - designator
+      - machine_ddis
+      - paired_tenant_id
+      - pairing_id
+      - is_subscribed
+      - virtual_cu_owner_id
+      - version_tag
+      - application_id
+      - endpoint_type
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: Unique identifier for the endpoint
+      tenant_id:
+        type: string
+        description: Identifier for the associated tenant
+      name:
+        type: string
+        description: Name of the endpoint
+      description:
+        type: string
+        description: Description of the endpoint
+      machine_type:
+        $ref: "./machine_type.yaml"
+      endpoint_type:
+        type: string
+        description: Identifier for the type of endpoint
+        enum:
+          - agricultural_software
+          - telemetry_platform
+          - communication_unit
+          - virtual_communication_unit
+      is_default_group:
+        type: boolean
+        description: Flag indicating if this is the default group
+      app_version_id:
+        type: string
+        format: uuid
+        description: Identifier for the version of the application this endpoint is associated with
+      is_deactivated:
+        type: boolean
+        description: Flag indicating if the endpoint is deactivated
+      external_id:
+        type: string
+        description: External identifier for the endpoint
+      machine_class_id:
+        type: integer
+        format: int32
+        description: Identifier for the class of machine this endpoint represents
+      designator:
+        type: string
+        description: A designator for the endpoint
+      machine_ddis:
+        type: array
+        items:
+          type: integer
+          format: int32
+        description: Array of DDI integers related to the machine
+      original_endpoint_id:
+        type: string
+        format: uuid
+        description: Identifier for the original endpoint if this is a copy or a derivative
+      paired_tenant_id:
+        type: string
+        description: Identifier for the paired tenant, if applicable
+      pairing_id:
+        type: string
+        format: uuid
+        description: Identifier for the pairing, if applicable
+      is_subscribed:
+        type: boolean
+        description: Flag indicating if the endpoint is subscribed to a service
+      virtual_cu_owner_id:
+        type: string
+        format: uuid
+        description: Identifier for the virtual CU owner
+      version_tag:
+        type: string
+        format: uuid
+      application_id:
+        type: string
+        format: uuid
+      created_at:
+        type: string
+        format: date-time
+        description: Date and time the endpoint was created

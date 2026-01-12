@@ -1,0 +1,141 @@
+openapi: "3.0.2"
+
+info:
+  title: MQTT Auth for Agrirouter
+  version: "1.0"
+  description: |
+    This service is used to authenticate and authorize MQTT connections to Agrirouter.
+    It is designed to be used with HiveMQ MQTT broker as a specification between custom HiveMQ extension
+    and sidecar running on the same local network (Kubernetes pod).
+servers:
+  - url: http://localhost:{port}
+    variables:
+      port:
+        default: "8080"
+
+paths:
+  /connection:
+    post:
+      operationId: authenticateConnection
+      summary: Authenticate incoming connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewConnection"
+      responses:
+        200:
+          description: Authentication is calculated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+        500:
+          description: Server Side Error
+        400:
+          description: Bad request
+
+  /authorization:
+    post:
+      operationId: authorizeRequest
+      summary: Authorize incoming subscribe and publish requests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationRequest"
+      responses:
+        200:
+          description: Authorization is calculated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationResponse"
+        500:
+          description: Server Side Error
+        400:
+          description: Bad request
+
+components:
+  schemas:
+    MqttActivity:
+      type: string
+      enum:
+        - SUBSCRIBE
+        - PUBLISH
+    AuthorizationResponse:
+      properties:
+        status:
+          type: string
+          enum:
+            - AUTHORIZED
+            - REJECTED
+    AuthorizationRequest:
+      type: object
+      required:
+        - mqttActivity
+        - topicFilter
+        - clientId
+        - tlsCommonName
+      properties:
+        mqttActivity: 
+          $ref: "#/components/schemas/MqttActivity"
+        topicFilter:
+          type: string
+        clientId:
+          type: string
+        tlsCommonName:
+          type: string
+      example:
+        tlsCommonName: "deviceAlternateId:dddddddd-2fc0-4e41-9585-5cd16d010712"
+        clientId: "dddddddd-2fc0-4e41-9585-5cd16d010712"
+        topicFilter: "measures/eeeeeeee-2fc0-4e41-9585-5cd16d010712"
+        mqttActivity: "SUBSCRIBE"
+    MqttPermission:
+      type: object
+      description: "A permission to subscribe or publish to a topic"
+      required:
+        - mqttActivity
+        - topicFilter
+      properties:
+        mqttActivity: 
+          $ref: "#/components/schemas/MqttActivity"
+        topicFilter:
+          type: string
+    NewConnection:
+      type: object
+      required:
+        - tlsCommonName
+        - clientId
+      properties:
+        tlsCommonName:
+          type: string
+        clientId:
+          type: string
+      example:
+        tlsCommonName: "deviceAlternateId:eeeeeeee-2fc0-4e41-9585-5cd16d010712"
+        clientId: "eeeeeeee-2fc0-4e41-9585-5cd16d010712"
+    Connection:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - AUTHENTICATED
+            - REJECTED
+        requiresDynamicAuthorization:
+          type: boolean
+          description: "If true, the client must request to query /authorization to athorize each subscribe and publish requests"
+        permissions:
+          type: array
+          description: |
+            Permissions that are granted to the client for a duration of connection,
+            normally are not returned when requiresDynamicAuthorization is false.
+          items: 
+            $ref: "#/components/schemas/MqttPermission"
+      
+        

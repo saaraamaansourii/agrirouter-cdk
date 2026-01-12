@@ -1,0 +1,25 @@
+type: object
+required:
+  - endpoint_id
+  - app_version_id
+  - capabilities
+  - push_notification
+  - updated_at
+properties:
+  endpoint_id:
+    type: string
+    format: uuid
+  app_version_id:
+    type: string
+    format: uuid
+  capabilities:
+    type: array
+    items:
+      $ref: "./capability.yaml"
+    x-faker:
+      min-items: 3
+  push_notification:
+    type: boolean
+  updated_at:
+    type: string
+    format: date-time

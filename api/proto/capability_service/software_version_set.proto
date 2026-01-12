@@ -1,0 +1,10 @@
+syntax = "proto3";
+package capability_service;
+
+
+
+// Event when a software version of a capability has been set.
+message CapabilityVersionSet {
+    string version_id = 1;
+    string endpoint_id = 2;
+}

@@ -1,0 +1,10 @@
+extends: ["spectral:oas"]
+overrides:
+  - rules:
+      # This rule is misfiring for OIDC
+      # https://github.com/stoplightio/spectral/issues/2566
+      oas3-operation-security-defined: "off"
+      # This rule is breaking our frontend code generation
+      operation-tags: "off"
+    files:
+      - "**/*.yaml"

@@ -1,0 +1,3 @@
+type: string
+enum: [agricultural_software, communication_unit, virtual_communication_unit, telemetry_platform]
+description: Type of the endpoint

@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package endpoint_service;
+
+import "endpoint_service/vcu_message.proto";
+
+message VcuOffboardEndpointsReturnedEvent {
+    message Failures {
+        string id = 1;                                            // External ID from the cloud provider
+        Message reason = 2;                                       // Information as to why it failed
+    }
+
+    repeated string offboarded_endpoints = 1;
+    repeated Failures failures = 2;
+    OffboardRequestStatus status = 3;
+    string application_message_id = 4;                            // Client generated Message ID it would use to uniquly identify the message it has sent
+    string message_id = 5;                                        // Unique Agrirouter generated message identifier
+    string endpoint_id = 6;                                       // ID of the sender endpoint within the agrirouter
+}
+
+enum OffboardRequestStatus {
+    OffboardRequestStatus_UNKNOWN = 0;                                    // Don't use, reserved
+    OffboardRequestStatus_SUCCESS = 1;                                    // All offboardings were successful
+    OffboardRequestStatus_PARTIAL_SUCCESS = 2;                            // Some offboardings failed
+    OffboardRequestStatus_FAILURE = 3;                                    // All of offboardins failed
+}
+

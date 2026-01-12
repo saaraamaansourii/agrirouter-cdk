@@ -1,0 +1,7 @@
+type: object
+properties:
+  isManaged:
+    type: boolean
+    description: "Enables or disables default route creation for this endpoint"
+required:
+  - isManaged

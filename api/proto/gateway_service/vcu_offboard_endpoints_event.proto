@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package gateway_service;
+
+message VcuOffboardEndpointsEvent {
+    repeated string endpoints = 1;  // The IDs of the endpoints within the agrirouter that should be offboarded at least one valid endpointId is required
+
+    google.protobuf.Timestamp timestamp = 2;    // Timestamp of the incoming message
+    string application_message_id = 3;          // Client generated Message ID it would use to uniquly identify the message it has sent
+    string endpoint_id = 4;                     // Identifier of the endpoint that have sent command
+    string message_id = 5;                      // Unique Agrirouter generated message identifier
+}

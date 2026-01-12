@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "common.proto";
+
+package feed_service;
+
+message MessageForMetricsEvent {
+    string application_message_id = 1;
+    string message_id = 2;
+    string recipient_endpoint_id = 3;
+    string technical_message_type = 4;
+    int64 payload_size = 5;
+    int64 application_seq_number = 6;
+    string team_set_context_id = 7;
+    agrirouter.common.ChunkComponent chunk_component = 8;
+    google.protobuf.Timestamp created_at = 9;
+    google.protobuf.Timestamp sent_timestamp = 10;
+}
+
+

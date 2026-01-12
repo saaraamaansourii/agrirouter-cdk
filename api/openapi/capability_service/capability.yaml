@@ -1,0 +1,9 @@
+type: object
+required:
+  - Direction
+  - TechnicalMessageTyps
+properties:
+  direction:
+    $ref: "./direction.yaml"
+  technical_message_type:
+    type: string

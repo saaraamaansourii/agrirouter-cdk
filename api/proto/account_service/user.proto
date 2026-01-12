@@ -1,0 +1,15 @@
+syntax = "proto3";
+package account_service;
+
+import "common.proto";
+
+// Event when a message type is changing
+message User {
+  agrirouter.common.StateChangeMetadata metadata = 1;
+  string id = 2;
+  string state = 3;
+}
+
+message UserDelete {
+  string id = 1;
+}

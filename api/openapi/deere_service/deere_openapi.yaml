@@ -1,0 +1,293 @@
+openapi: 3.0.3
+info:
+  title: Agrirouter Deere Service API
+  version: 1.0.0
+  description: The API managing integrations of the agrirouter with the John Deere Operations Center
+  contact:
+    name: DKE-Data GmbH & Co. KG
+    email: info@dke-data.com
+    url: https://dke-data.com
+servers:
+  - url: http://deere.localhost:{port}
+    variables:
+      port:
+        default: "8000"
+  - url: http://localhost:{port}
+    description: Localhost Server
+    variables:
+      port:
+        default: "8080"
+  - url: https://deere-service.qa.agrirouter.farm
+    description: QA Server
+  - url: https://deere-service.prod.agrirouter.farm
+    description: Production Server
+
+security:
+  - openIdLocalhost:
+      - "farmer"
+  - openIdLocalK3d:
+      - "farmer"
+  - openIdQa:
+      - "farmer"
+
+paths:
+  /authorizations:
+    post:
+      summary: Initiate new authorization process
+      description: This endpoint starts a new authorization process for the agrirouter with John Deere Operations Center.
+      operationId: postAuthorization
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/authorization_request"
+      responses:
+        "201":
+          description: Authorization has started
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/authorization_response"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+  /authorizations/{id}:
+    post:
+      summary: Update existing authorization process
+      description: This endpoint updates an existing authorization process with the authorization code received from the authorization server.
+      operationId: putAuthorization
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The ID of the authorization to update
+          schema:
+            type: string
+        - $ref: "#/components/parameters/x-tenant-id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/authorization_request_update"
+      responses:
+        "200":
+          description: Authorization has been updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/authorization_put_response"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+  /endpoints_provisioning:
+    post:
+      summary: Provision endpoints for every connected organization
+      description: |
+        Checks if all organizations connected in JDOC to agrirouter are registered
+        in the agrirouter as endpoints and creates/updates them if necessary.
+        
+        Note that this API deliberately does not take any parameters except
+        authorization and tenant ID, so that it can be called directly after
+        redirecting the user back from JDOC connection page without clicking
+        any button in UI. This way no malicious input can be provided and cause
+        this to trigger an unwanted action by any request forgery.
+      operationId: provisionEndpoints
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      responses:
+        "204":
+          description: Endpoints were provisioned successfully
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+  /refresh_subscriptions:
+    post:
+      summary: Check existing subscriptions and create new ones if necessary
+      description: |
+        Fetches all subscriptions to John Deere and checks their status.
+        
+        The resulting state should be:
+        - one active subscription for all farms of an organization
+        - one active subscription for all fields of an organization
+        - one active subscription for all boundaries of an organization
+        - one active subscription for each client/customer of an organization
+        - all the remaining subscriptions will be terminated
+
+        Note that this API deliberately does not take any parameters except
+        authorization and tenant ID, so that it can be called directly after
+        redirecting the user back from JDOC connection page without clicking
+        any button in UI. This way no malicious input can be provided and cause
+        this to trigger an unwanted action by any request forgery.
+      operationId: refreshSubscriptions
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      responses:
+        "204":
+          description: Subscriptions were refreshed successfully
+        "400":
+          description: Bad request - invalid tenant or configuration
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+  /receiving_events:
+    post:
+      security:
+        - webhookAuth: []
+      summary: Receive events from the John Deere Operations Center
+      description: This endpoint receives events from the JDOC and processes them for the agrirouter.
+      operationId: receiveEvents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/subscription_event"
+      responses:
+        "204":
+          description: Events received successfully
+        "400":
+          description: Bad request due to invalid input data
+        "500":
+          $ref: "../common/responses/internal_server_error.yaml"
+components:
+  parameters:
+    x-tenant-id:
+      in: header
+      name: x-tenant-id
+      schema:
+        type: string
+        format: uuid
+      required: true
+      description: The tenant id to scope the request to
+      examples:
+        system-tests-tenant:
+          value: "00000000-0000-0000-0000-000000000001"
+        user1-tenant:
+          value: "980e3993-1cbc-428c-bce0-2d98fc8e5436"
+  schemas:
+    event_metadata:
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
+          type: string
+          description: Key of the metadata
+        value:
+          type: string
+          description: Value of the metadata
+    subscription_event:
+      type: object
+      required:
+        - eventTypeId
+        - clientKey
+        - targetResource
+        - metadata
+        - links
+      properties:
+        eventTypeId:
+          type: string
+          description: Type of the event being sent
+        clientKey:
+          type: string
+          description: The client key that made the subscription.
+        targetResource:
+          type: string
+          description: Link to the event resource.
+        token:
+          type: string
+          description: The token to authenticate the request.
+        metadata:
+          type: array
+          items:
+            $ref: "#/components/schemas/event_metadata"
+        links:
+          type: array
+          items:
+            type: object
+            properties:
+              rel:
+                type: string
+                description: The relation of the link.
+              uri:
+                type: string
+                format: uri
+                description: The URI of the link.
+            required:
+              - rel
+              - uri
+    authorization_put_response:
+      type: object
+      properties:
+        connect_uri:
+          type: string
+          format: uri
+          description: The URI to redirect the user to for connecting their JDOC organization to the agrirouter
+    authorization_request:
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          type: string
+          description: The state parameter to maintain state between the request and callback
+    authorization_request_update:
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          type: string
+          description: The state parameter to maintain state between the request and callback
+        code:
+          type: string
+          description: The authorization code received from the authorization server
+    authorization_response:
+      type: object
+      required:
+        - id
+        - redirect_uri
+      properties:
+        id:
+          type: string
+          description: The generated authorization ID
+        redirect_uri:
+          type: string
+          description: The redirect URI to use for the authorization
+          format: uri
+ 
+  securitySchemes:
+    openIdLocalhost:
+      type: openIdConnect
+      openIdConnectUrl: http://localhost:8081/realms/agrirouter/.well-known/openid-configuration
+    openIdQa:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.qa.agrirouter.farm/realms/agrirouter/.well-known/openid-configuration
+    webhookAuth:
+      type: http
+      scheme: bearer
+

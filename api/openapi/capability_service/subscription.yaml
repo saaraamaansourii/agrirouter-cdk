@@ -1,0 +1,17 @@
+type: object
+required:
+  - endpoint_id
+  - subscriptions
+  - updated_at
+properties:
+  endpoint_id:
+    type: string
+    format: uuid
+  updated_at:
+    type: string
+    format: date-time
+  subscriptions:
+    type: array
+    items:
+      type: string
+      example: "doc:pdf"

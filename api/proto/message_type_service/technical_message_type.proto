@@ -1,0 +1,16 @@
+syntax = "proto3";
+package message_type_service;
+
+import "common.proto";
+
+// Event when a message type is changing
+message MessageType {
+  agrirouter.common.StateChangeMetadata metadata = 1;
+  MessageTypeState state = 2;
+}
+
+message MessageTypeState {
+  string name = 1;
+  string description = 2;
+  repeated string information_type_ids = 3;
+}

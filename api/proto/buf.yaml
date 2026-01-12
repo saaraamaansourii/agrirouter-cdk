@@ -1,0 +1,11 @@
+version: v1
+name: com/dke-data/agrirouter
+lint:
+  ignore_only:
+    PACKAGE_DIRECTORY_MATCH:
+        - common.proto
+  use:
+    - MINIMAL
+    - ENUM_FIRST_VALUE_ZERO
+# TODO: use more rules from
+# https://buf.build/docs/lint/rules

@@ -1,0 +1,21 @@
+syntax = "proto3";
+package account_service;
+
+import "common.proto";
+
+// Event when a message type is changing
+message Tenant {
+  agrirouter.common.StateChangeMetadata metadata = 1;
+  TenantState state = 2;
+}
+
+message TenantState {
+  string id = 1;
+  string companyName = 2;               
+  optional string companyDescription = 3;
+  optional string manufacturerCode = 4;
+}
+
+message TenantDelete {
+  string id = 1;
+}

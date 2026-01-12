@@ -1,0 +1,24 @@
+syntax = "proto3";
+package capability_service;
+
+// Return Event to set capabilities of an endpoint, key is endpoint ID
+message SetEndpointCapabilitiesReturnedEvent {
+    string application_message_id = 1;
+    string message_id = 2;
+
+    enum Status {
+      UNKNOWN = 0;                        // unspecified value
+      NO_CHANGE = 1;                      // map to 201 ACK_WITH_MESSAGES VAL22
+      ALL_OK = 2;                         // map to 200 ACK
+      BAD_CAPABILITIES = 3;               // map to 400 ACK_WITH_MESSAGES VAL_000007
+      INVALID_SOFTWARE_VERSION = 4;       // map to 400 ACK_WITH_MESSAGES VAL_000008
+      INVALID_APPLICATION = 5;
+      INTERNAL_ERROR = 6;                 // map to 400 ACK_WITH_FAILURE
+      BAD_TESTER = 7;                     // map to 400 ACK_WITH_MESSAGES VAL_000013
+    }
+
+    Status status = 3;
+    repeated string failedMessageTypes = 4;
+    string endpoint_id = 5;
+    string vcu_endpoint_id = 6;                 // Identifier of the VCU that have actually sent command if it was forwarded by telemetry platform
+}

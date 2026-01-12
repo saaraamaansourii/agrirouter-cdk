@@ -1,0 +1,36 @@
+syntax = "proto3";
+package capability_service;
+
+import "common.proto";
+
+// Event when a capability is changing
+message CapabilitySpecification {
+  agrirouter.common.StateChangeMetadata metadata = 1;
+  CapabilitySpecificationState state = 2;
+}
+
+message Capability {
+    enum Direction {
+        UNKNOWN = 0;
+        SEND = 1;
+        RECEIVE = 2;
+        SEND_RECEIVE = 3;
+    }
+
+    Direction direction = 1;
+    string technical_message_type = 2;
+}
+
+enum PushNotification {
+    PushNotification_UNKNOWN = 0;
+    PushNotification_DISABLED = 1;
+    PushNotification_ENABLED = 2;
+    PushNotification_ENABLED_HIGH_FREQUENCY = 3;
+}
+
+message CapabilitySpecificationState {
+    string endpoint_id = 1;
+    string app_version_id = 2;
+    repeated Capability capabilities = 3;
+    PushNotification EnablePushNotifications = 4;
+}

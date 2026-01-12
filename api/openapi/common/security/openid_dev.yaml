@@ -1,0 +1,2 @@
+type: openIdConnect
+openIdConnectUrl: https://auth.dev.agrirouter.farm/realms/agrirouter/.well-known/openid-configuration

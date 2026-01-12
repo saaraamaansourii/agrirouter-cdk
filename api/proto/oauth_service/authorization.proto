@@ -1,0 +1,16 @@
+syntax = "proto3";
+package oauth_service;
+
+import "common.proto";
+
+// Event when an authorization is changing
+message Authorization {
+  agrirouter.common.StateChangeMetadata metadata = 1;
+  AuthorizationState state = 2;
+}
+
+message AuthorizationState {
+  string tenantId = 1;
+  string applicationId = 2;
+  string scope = 3;
+}

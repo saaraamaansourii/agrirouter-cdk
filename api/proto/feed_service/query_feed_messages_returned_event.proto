@@ -1,0 +1,43 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+import "feed_service/query_feed_message_headers_returned_event.proto";
+package feed_service;
+
+
+message MessageQueryResponse { 
+  message Header {
+    string receiver_id = 1;                                               // Receiver of this message
+    string technical_message_type = 2;                                    // Technical Message Type ID
+    string team_set_context_id = 3;                                       // If associated with a team set context (Device Description) this is the linkage ID
+    feed_service.ChunkComponent chunk_context = 4;                  // Refer to agrirouter.commons.ChunkComponent
+    int64 payload_size = 5;                                               // Expected size of the payload associated with this message
+    google.protobuf.Timestamp sent_timestamp = 6;                         // The timestamp in UTC that the sender has sent this message
+    int64 sequence_number = 7;                                            // Message sequence number
+    string sender_id = 8;                                                 // Sender for the group of messages
+    google.protobuf.Timestamp created_at = 9;                             // The time at which the message was inserted into the endpoints feed within the agrirouter
+    string message_id = 10;                                               // Internal AgriRouter message ID representing this message and its payload
+    feed_service.Metadata metadata = 11;                            // Additional metadata information to help differentiate between messages of the same type
+  }
+
+  message FeedMessage {
+    Header header = 1;                                                    // Message Header Information for identification purposes
+    string payload_file_key = 2;                                   // Internally used key to identify the payload file in S3
+  }
+
+  feed_service.QueryMetrics query_metrics = 1;                                         // Refer to Statistics
+  feed_service.Page page = 2;                                                          // Page number of total pages to be delievered for initial query
+  repeated FeedMessage messages = 3;  
+  string endpoint_id = 4;                                     
+  string message_id = 5; 
+  string application_message_id = 6; 
+  string vcu_endpoint_id = 7;                 // Identifier of the VCU that have actually sent command if it was forwarded by telemetry platform
+  enum MessageQueryStatus {
+    MESSAGE_QUERY_STATUS_UNKNOWN = 0;
+    ACK = 1;
+    FAILURE = 2;
+    FAILURE_INFORMATION_MISSING = 3;
+    FAILURE_QUERYDATA_MALFORMED = 4;  
+  }
+  MessageQueryStatus status = 8;
+  string failure_code = 9;
+}

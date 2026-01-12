@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package gateway_service;
+
+message ListUnfilteredEndpointsEvent {// Defines the direction the rules should be configured for the endpoint lists
+    enum Direction {                           
+        SEND = 0;                               // I as the requesting endpoint can send the requested technical message type too
+        RECEIVE = 1;                            // I as the requesting endpoint can recevie the requested technical message type from
+        SEND_RECEIVE = 2;                       // I as the requesting endpoint can send too or receive from endpoints for the requested technical message type
+    }
+
+    string technical_message_type = 1;          // The technical message type which is relevant for the endpoint listing. If not provided we consider all possible rules
+    Direction direction = 2;                    // The direction as mentioned above - Default is SEND if not provided
+
+    google.protobuf.Timestamp timestamp = 3;    // Timestamp of the incoming message
+    string application_message_id = 4;          // Client generated Message ID it would use to uniquly identify the message it has sent
+    string endpoint_id = 5;                     // Identifier of the endpoint that have sent command
+    string message_id = 6;                      // Unique Agrirouter generated message identifier
+    string vcu_endpoint_id = 7;                 // Identifier of the VCU that have actually sent command if it was forwarded by telemetry platform
+}

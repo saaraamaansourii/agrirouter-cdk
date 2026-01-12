@@ -1,0 +1,129 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: info@dke-data.com
+    name: DKE Data
+    url: https://dke-data.com
+  title: Endpoint Service API
+  version: 1.0.0
+  description: The API to read endpoint capabilities on Agrirouter.
+servers:
+  - url: http://capability.localhost:{port}
+    variables:
+      port:
+        default: "8000"
+  - url: http://localhost:{port}
+    description: Localhost Server
+    variables:
+      port:
+        default: "8080"
+  - url: https://capability-service.dev.agrirouter.farm
+    description: Development Server
+  - url: https://capability-service.qa.agrirouter.farm
+    description: QA Server
+  - url: https://capability-service.prod.agrirouter.farm
+    description: Production Server
+
+security:
+  - openIdLocalK3d:
+      - "farmer"
+  - openIdLocalhost:
+      - "farmer"
+  - openIdDev:
+      - "farmer"
+  - openIdQa:
+      - "farmer"
+
+paths:
+  /capabilities:
+    get:
+      summary: List capabilities
+      description: Returns the capabilities of one endpoint for a given tenant
+      operationId: "getCapabilities"
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+        - in: query
+          name: endpoint
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The endpoint id to scope the request to
+      responses:
+        "200":
+          description: Object containing the capabilities of the endpoint
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/capability"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /subscriptions:
+    get:
+      summary: List subscriptions
+      description: Returns the subscriptions of one endpoint for a given tenant
+      operationId: "getSubscriptions"
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+        - in: query
+          name: endpoint
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The endpoint id to scope the request to
+      responses:
+        "200":
+          description: Object containing the subscriptions of the endpoint
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/subscription"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+components:
+  parameters:
+    x-tenant-id:
+      in: header
+      name: x-tenant-id
+      schema:
+        type: string
+      required: true
+      description: The tenant id to scope the request to
+      examples:
+        system-tests-tenant:
+          value: "00000000-0000-0000-0000-000000000001"
+        user1-tenant:
+          value: "980e3993-1cbc-428c-bce0-2d98fc8e5436"
+  schemas:
+    capability:
+      $ref: "./capability_specification.yaml"
+    subscription:
+      $ref: "./subscription.yaml"
+
+  securitySchemes:
+    openIdLocalhost:
+      $ref: ../common/security/openid_local.yaml
+    openIdDev:
+      $ref: ../common/security/openid_dev.yaml
+    openIdQa:
+      $ref: ../common/security/openid_qa.yaml

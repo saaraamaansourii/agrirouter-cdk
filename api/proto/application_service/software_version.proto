@@ -1,0 +1,36 @@
+syntax = "proto3";
+package application_service;
+
+import "common.proto";
+
+// Event when a message type is changing
+message SoftwareVersion {
+  agrirouter.common.StateChangeMetadata metadata = 1;
+  SoftwareVersionState state = 2;
+}
+
+message SoftwareVersionState {
+  enum Status {
+    NEW = 0;
+    SUBMITTED = 1;
+    REJECTED = 2;
+    BLOCKED = 3;
+    APPROVED_FOR_TESTING = 4;
+    APPROVED = 5;
+  }
+  string id = 1;
+  string applicationId = 2;
+  int32 versionNumber = 3;
+  string description = 4;
+  Status status = 5;
+  repeated SoftwareVersionCapability capabilities = 6;
+  bool isPublic = 7;
+}
+
+message SoftwareVersionCapability {
+  string name = 1;
+  string description = 2;
+  bool canSend = 3;
+  bool canReceive = 4;
+  string softwareVersionID = 5;
+}

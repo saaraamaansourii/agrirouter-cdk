@@ -1,0 +1,335 @@
+openapi: "3.0.2"
+
+info:
+  title: Message Type API
+  version: "1.0"
+  description: |
+    This API provides functionality to manage technical message types and information types
+    for agrirouter administrators and to discover them for developers and farmers.
+  contact:
+    name: DKE-Data GmbH & Co. KG
+    email: info@dke-data.com
+    url: https://dke-data.com
+servers:
+  - url: http://message-type.localhost:{port}
+    variables:
+      port:
+        default: "8000"
+  - url: http://localhost:{port}
+    variables:
+      port:
+        default: "8080"
+  - url: https://message-type-service.dev.agrirouter.farm
+    description: dev
+  - url: https://message-type-service.qa.agrirouter.farm
+    description: qa
+  - url: https://message-type-service.prod.agrirouter.farm
+    description: prod
+
+security:
+  - openIdLocalhost:
+      - "administrator"
+  - openIdLocalK3d:
+      - "administrator"
+  - openIdDev:
+      - "administrator"
+  - openIdQa:
+      - "administrator"
+
+paths:
+  /information-types:
+    get:
+      summary: Get all information types
+      operationId: getInformationTypes
+      description: Retrieve a list of all information types from the database
+      security:
+        - openIdLocalhost:
+            - "administrator"
+            - "developer"
+            - "farmer"
+        - openIdDev:
+            - "administrator"
+            - "developer"
+            - "farmer"
+        - openIdQa:
+            - "administrator"
+            - "developer"
+            - "farmer"
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            x-request-id:
+              $ref: ../common/headers.yaml#/x-request-id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InformationTypesList"
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    post:
+      summary: Create a new information type
+      operationId: createInformationType
+      description: Create a new information type in the database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+              properties:
+                name:
+                  type: string
+                  description: Translation key for the information type name
+                description:
+                  type: string
+                  description: Translation key for the information type description
+      responses:
+        "201":
+          description: Information type created successfully
+          headers:
+            x-request-id:
+              $ref: ../common/headers.yaml#/x-request-id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InformationType"
+        "409":
+          $ref: ../common/responses/conflict.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /information-types/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      summary: Update an information type by ID
+      operationId: updateInformationType
+      description: Update an information type in the database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDescriptionRequest"
+      responses:
+        "200":
+          description: Information type updated successfully
+          headers:
+            x-request-id:
+              $ref: ../common/headers.yaml#/x-request-id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InformationType"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    delete:
+      summary: Delete an information type by ID
+      operationId: deleteInformationType
+      description: Delete an information type from the database
+      responses:
+        "204":
+          description: Information type deleted successfully
+          headers:
+            x-request-id:
+              $ref: ../common/headers.yaml#/x-request-id
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /message-types:
+    get:
+      summary: Get all messageTypes
+      security:
+        - openIdLocalhost:
+            - "administrator"
+            - "developer"
+            - "farmer"
+        - openIdDev:
+            - "administrator"
+            - "developer"
+            - "farmer"
+        - openIdQa:
+            - "administrator"
+            - "developer"
+            - "farmer"
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            x-request-id:
+              $ref: ../common/headers.yaml#/x-request-id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageTypesList"
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+    post:
+      summary: Create a new messageType
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageType"
+      responses:
+        "201":
+          description: MessageType created successfully
+          headers:
+            x-request-id:
+              $ref: ../common/headers.yaml#/x-request-id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageType"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+  /message-types/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    put:
+      summary: Update a messageType by ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMessageTypeRequest"
+      responses:
+        "200":
+          description: MessageType updated successfully
+          headers:
+            x-request-id:
+              $ref: ../common/headers.yaml#/x-request-id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageType"
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+    delete:
+      summary: Delete a messageType by ID
+      responses:
+        "204":
+          description: MessageType deleted successfully
+          headers:
+            x-request-id:
+              $ref: ../common/headers.yaml#/x-request-id
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+components:
+  schemas:
+    InformationType:
+      type: object
+      description: |
+        Information type is used to categorize message types, they are related as many-to-many.
+        Farmers are able to configure routing rules based on information types, while
+        connected applications send messages with specific message types.
+        Only administrators can create and update information types. Developers need to
+        discover information types when they configure their applications.
+        Farmers might need to know information types related to message types when they
+        look at details of sent/received messages and capabilities of connected applications.
+      required:
+        - name
+        - description
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Translation key for the information type name
+        description:
+          type: string
+          description: Translation key for the information type description
+    InformationTypesList:
+      type: array
+      items:
+        $ref: "#/components/schemas/InformationType"
+    MessageType:
+      type: object
+      description: |
+        Every message sent in agrirouter has a message type. Connected applications
+        provide a list of capabilities to agrirouter, specifying messages with which
+        types they can send and receive, which serves as a filter for routing rules.
+        Only administrators can create and update message types. Developers need to
+        discover message types when they configure their applications.
+      required:
+        - name
+        - description
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        information_type_names:
+          type: array
+          description: List of names of related information types
+          items:
+            type: string
+    UpdateDescriptionRequest:
+      required:
+        - description
+      properties:
+        description:
+          type: string
+    UpdateMessageTypeRequest:
+      required:
+        - description
+        - information_type_names
+      properties:
+        description:
+          type: string
+        information_type_names:
+          type: array
+          minItems: 1
+          description: List of names of related information types
+          items:
+            type: string
+    MessageTypesList:
+      type: array
+      items:
+        $ref: "#/components/schemas/MessageType"
+  securitySchemes:
+    openIdLocalhost:
+      $ref: ../common/security/openid_local.yaml
+    openIdDev:
+      $ref: ../common/security/openid_dev.yaml
+    openIdQa:
+      $ref: ../common/security/openid_qa.yaml

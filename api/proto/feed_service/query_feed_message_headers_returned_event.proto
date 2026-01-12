@@ -1,0 +1,63 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+package feed_service;
+
+message Page {
+  int32 number = 1;                                                       // Current page number for pagination of the headers. Each message is for 1 payload
+  int32 total = 2;                                                        // Total number of pages (Corresponds to total number of payloads queried)
+}
+
+message QueryMetrics {
+  int32 total_messages_in_query = 1;                                      // Specifies the overall messages applicable for the as the response would be capped
+  int32 max_count_restriction = 2;                                        // What the max cap is for the amount of possible messages within a response
+}
+
+message Metadata {
+    string file_name = 1;
+}
+
+message ChunkComponent {
+    string context_id= 1; 		                // client generated unique identifier for larger binaries
+    int64 current= 2; 		                    // number of the current chunk 
+    int64 total= 3; 		                        // total number of chunks of binary
+    int64 total_size= 4; 		                    // total size of binary
+}
+
+message HeaderQueryResponse {
+  message Header {
+    string message_id = 1;                                                // Internal AgriRouter message ID representing this message and its payload
+    string technical_message_type = 2;                                    // Technical Message Type ID
+    string team_set_context_id = 3;                                       // If associated with a team set context (Device Description) this is the linkage ID
+    string chunk_context_id = 4;                                          // If this is part of a large set of messages the chunk context ID. Refer to the Chunk Contexts section fo the complete details of the chunk as to not repeat it over and over
+    int64 payload_size = 5;                                               // Expected size of the payload associated with this message
+    google.protobuf.Timestamp sent_timestamp = 6;                         // The timestamp in UTC that the sender has sent this message
+    int64 sequence_number = 7;                                            // Message sequence number
+    int64 current_chunk = 8; 		                                          // Number of this entry within the chunk context ordering
+    google.protobuf.Timestamp created_at = 9;                             // The time at which the message was inserted into the endpoints feed within the agrirouter
+    Metadata metadata = 10;                            // Additional metadata information to help differentiate between messages of the same type
+  }
+
+  message Feed {
+    string sender_id = 1;                                                 // Sender for the group of messages
+    string receiver_id = 2;                                               // Receiver for the group of messages
+    repeated Header headers = 3;                                          // Message header information for messages of the sender_id in combination with receiver_id based on the queried request
+  }
+
+  QueryMetrics query_metrics = 1;                                         // Refer to Statistics
+  Page page = 2;                                                          // Refer to Paging
+  repeated ChunkComponent chunk_contexts = 3;          // Refer to agrirouter.commons.ChunkComponent
+  repeated Feed feed = 4;                                                 // Refer to Feed
+  string message_id = 5;                                                   // Unique Agrirouter generated message identifier
+  string application_message_id = 6;                                                
+  string endpoint_id = 7;
+  string vcu_endpoint_id = 8;                 // Identifier of the VCU that have actually sent command if it was forwarded by telemetry platform
+  enum HeaderQueryStatus {
+    HEADER_QUERY_STATUS_UNKNOWN = 0;
+    ACK = 1;
+   FAILURE = 2;  
+    FAILURE_INFORMATION_MISSING = 3;
+    FAILURE_QUERYDATA_MALFORMED = 4;
+  }
+  HeaderQueryStatus status = 9;
+  string failure_code = 10;
+}

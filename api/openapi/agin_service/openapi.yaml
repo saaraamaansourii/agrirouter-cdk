@@ -1,0 +1,418 @@
+openapi: 3.0.3
+
+info:
+  title: AgIN Service
+  version: "1.0"
+  description: AgIN service internal API
+  contact:
+    name: API Support
+    email: support@dke-data.com
+    url: https://agrirouter.com/de/unternehmen/kontakt/
+servers:
+  - url: http://agin.localhost:{port}
+    variables:
+      port:
+        default: "8000"
+  - url: http://localhost:{port}
+    variables:
+      port:
+        default: "8080"
+  - url: https://agin-service.qa.agrirouter.farm
+    description: qa
+  - url: https://agin-service.prod.agrirouter.farm
+    description: prod
+
+security:
+  - aginBearer: []
+
+paths:
+  /account-connections:
+    get:
+      operationId: getAccountConnections
+      summary: Retrieve a list of account connections in AgIN.
+      description: Retrieval of a list of account connection records.
+      responses:
+        "200":
+          description: The request was successfully completed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetAllAccountConnections"
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    post:
+      operationId: createAccountConnection
+      summary: Create a new account connection within AgIN.
+      description: Connect requesting user account to user account on target platform.
+      requestBody:
+        description: A list of scopes that are granted by the requesting platform. For example granting scope 'agin:machine_tracking:consume' means that User A on platform A wants to enable User B on platform B to consume machine tracking data from the account of User A.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountConnectionRequest"
+      responses:
+        "200":
+          description: Redirect URL of target platform's IDP.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  redirect_url:
+                    type: string
+                    description: The URL to which the client should be redirected.
+              example:
+                redirect_url: "http://idp-b.com/authorize"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+  /account-connection-integrations:
+    post:
+      operationId: createAccountConnectionIntegration
+      summary: Integrate an existing AgIN account connection into agrirouter.
+      description: The corresponding AgIN account connection is integrated into agrirouter by performing necessary actions.
+      requestBody:
+        description: The account connection integration
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountConnectionIntegration"
+      responses:
+        "201":
+          description: Account connection integrated successfully
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+  /sdl/platforms:
+    get:
+      operationId: getPlatforms
+      security:
+        - openIdLocalhost:
+            - "farmer"
+        - openIdLocalK3d:
+            - "farmer"
+        - openIdQa:
+            - "farmer"
+      summary: Retrieve the service discovery list with all participating platforms within AgIN.
+      description: Retrieve the service discovery list with all participating platforms within AgIN.
+      responses:
+        "200":
+          description: The request was successfully completed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Platforms"
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+components:
+  schemas:
+    PlatformUserAccount:
+      type: object
+      description: The resolved user information.
+      required:
+        - platform_user
+      properties:
+        platform_user:
+          type: string
+          description: The unique user identifier.
+    PlatformRequesting:
+      type: object
+      description: The platform from which the account connection request originates from (source).
+      required:
+        - platform_id
+        - user_account
+        - scopes_granted
+      properties:
+        platform_id:
+          type: string
+          format: uuid
+          description: The unique platform identifier that was extracted from the Service Discovery List.
+        user_account:
+          $ref: "#/components/schemas/PlatformUserAccount"
+        scopes_granted:
+          type: array
+          description: A list of scopes that are granted by the requesting platform.
+          items:
+            type: string
+            description: A defined scope.
+    PlatformResponding:
+      type: object
+      description: The platform that responds to the account connection request (target).
+      required:
+        - platform_id
+        - user_account
+        - scopes_accepted
+      properties:
+        platform_id:
+          type: string
+          format: uuid
+          description: The unique platform identifier that was extracted from the Service Discovery List.
+        user_account:
+          type: object
+          description: The resolved user information.
+          required:
+            - platform_user
+          properties:
+            platform_user:
+              type: string
+              description: The unique user identifier.
+        scopes_accepted:
+          type: array
+          description: A list of scopes that were accepted by the responding platform.
+          items:
+            type: string
+            description: A defined scope.
+    AccountConnection:
+      description: Result object for a requested account connection record.
+      type: object
+      required:
+        - connection_id
+        - platform_requesting
+        - platform_responding
+        - created_at
+        - updated_at
+      properties:
+        connection_id:
+          type: string
+          format: uuid
+          description: The unique account connection identifier.
+        connection_description:
+          type: string
+          description: An optional description for the account connection.
+        platform_requesting:
+          $ref: "#/components/schemas/PlatformRequesting"
+        platform_responding:
+          $ref: "#/components/schemas/PlatformResponding"
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp for the account connection record creation.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp for the last account connection record update.
+      example:
+        connection_id: 123e4567-e89b-12d3-a456-426614174000
+        connection_description: The connection for User A on Platform A and User B on Platform B.
+        platform_requesting:
+          platform_id: 3c60f16c-84ce-4764-a347-e59770fca9e0
+          user_account:
+            platform_user: 3f8e0f9d-1f5f-4cee-a4d1-34568b3f2de3
+          scopes_granted:
+            - agin:machine_tracking:consume
+            - agin:machine_tracking:provide
+        platform_responding:
+          platform_id: d3c47673-ddfa-42c0-9444-e19d2616e1f6
+          user_account:
+            platform_user: 27c1cef6-5e9b-4986-9d2a-96b98f8f0a08
+          scopes_accepted:
+            - agin:machine_tracking:consume
+        created_at: "2024-12-11T06:29:11Z"
+        updated_at: "2024-12-11T06:29:11Z"
+    GetAllAccountConnections:
+      type: object
+      description: Result object for a requested set of account connections.
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          description: List of account connections.
+          items:
+            $ref: "#/components/schemas/AccountConnection"
+      example:
+        data:
+          - connection_id: 123e4567-e89b-12d3-a456-426614174000
+            connection_description: The connection for User A on Platform A and User B on Platform B.
+            platform_requesting:
+              platform_id: 3c60f16c-84ce-4764-a347-e59770fca9e0
+              user_account:
+                platform_user: 3f8e0f9d-1f5f-4cee-a4d1-34568b3f2de3
+              scopes_granted:
+                - agin:machine_tracking:consume
+                - agin:machine_tracking:provide
+            platform_responding:
+              platform_id: d3c47673-ddfa-42c0-9444-e19d2616e1f6
+              user_account:
+                platform_user: 27c1cef6-5e9b-4986-9d2a-96b98f8f0a08
+              scopes_accepted:
+                - agin:machine_tracking:consume
+            created_at: "2024-12-11T06:29:11Z"
+            updated_at: "2024-12-11T06:29:11Z"
+    CreateAccountConnectionRequest:
+      type: object
+      description: The scopes granted for the new account connection that can be accepted by the other platform.
+      required:
+        - scopes_granted
+        - target_platform
+      properties:
+        scopes_granted:
+          type: array
+          description: A list of granted scopes.
+          items:
+            type: string
+            description: An Oauth scope.
+        description:
+          type: string
+          description: A description for the account connection.
+        target_platform:
+          $ref: '#/components/schemas/TargetPlatformAccountConnectionCreation'
+      example:
+        scopes_granted:
+          - "agin:machine_tracking:consume"
+          - "agin:machine_tracking:provide"
+        description: "This is an account connection between my x and y machines."
+        target_platform:
+          id: 30d6442f-e68b-479f-a36c-116ec9bce9ea
+    TargetPlatformAccountConnectionCreation:
+      type: object
+      description: The platform that responds to the account connection request (target).
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique platform identifier that was extracted from the Service Discovery List.
+    lifecycle_status:
+      description: The current Lifecycle Status for a Platform.
+      type: string
+      default: Created
+      enum:
+        [
+          "Created",
+          "Restricted_testing",
+          "Ct_passed",
+          "Ct_passed_and_public",
+          "Removed",
+        ]
+    system_type:
+      type: string
+      enum: ["Simulation", "Development", "Testing", "Production"]
+      default: Production
+    certification_status:
+      description: The current Certification Status for a Use Case.
+      type: string
+      default: Pending
+      enum:
+        - Pending
+        - Certified
+        - Deprecated
+    Platform:
+      type: object
+      description: A participating AgIN Platform
+      required:
+        - name
+        - lifecycle_status
+        - root_url
+        - logo_url
+        - authentication_url
+        - redirect_uris
+        - api_version
+        - use_cases
+      properties:
+        name:
+          description: The user-facing name of the Platform, if different to the company_name.
+          type: string
+          example: Platform A
+        description:
+          type: string
+          example: ""
+        system_type:
+          $ref: "#/components/schemas/system_type"
+        lifecycle_status:
+          $ref: "#/components/schemas/lifecycle_status"
+        root_url:
+          description: The root URL which the Platform's AgIN API can be reached at.
+          type: string
+          format: uri
+          example: https://platform-a.company.com
+        logo_url:
+          type: string
+          format: uri
+          example: https://platform-a.company.com/.../logo
+        authentication_url:
+          type: string
+          format: uri
+          example: https://platform-a.company.com/.../auth
+        info_url:
+          type: string
+          format: uri
+          example: https://platform-a.company.com/.../about
+        redirect_uris:
+          description: The complete list of all valid redirect URIs for the Platform.
+          type: array
+          items:
+            type: string
+            format: uri
+          example:
+            - https://company.com
+            - https://platform-a.company.com
+        company:
+          type: object
+          required:
+            - name
+            - description
+            - logo_url
+          properties:
+            name:
+              type: string
+              example: Company A
+            description:
+              type: string
+              example: ""
+            logo_url:
+              type: string
+              format: uri
+              example: https://company.com/logo
+        api_version:
+          type: string
+          example: 1.1.2
+        use_cases:
+          type: array
+          items:
+            $ref: "#/components/schemas/UseCaseWithDirection"
+    UseCaseWithDirection:
+      type: object
+      required:
+        - name
+        - version
+        - certification_status
+      properties:
+        name:
+          type: string
+          example: Machine Tracking
+        version:
+          type: string
+          example: 1.2.9
+        certification_status:
+          $ref: "#/components/schemas/certification_status"
+    Platforms:
+      type: object
+      description: |
+        A map where each key is a unique UID representing a platform, and the value is the platform's details.
+      additionalProperties:
+        $ref: "#/components/schemas/Platform"
+    AccountConnectionIntegration:
+      type: object
+      properties:
+        connection_id:
+          type: string
+          format: uuid
+          description: The ID of the account connection that should be integrated
+
+  securitySchemes:
+    openIdLocalhost:
+      $ref: ../common/security/openid_local.yaml
+    openIdQa:
+      $ref: ../common/security/openid_qa.yaml
+    aginBearer:
+      type: http
+      scheme: bearer

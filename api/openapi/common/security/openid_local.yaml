@@ -1,0 +1,2 @@
+type: openIdConnect
+openIdConnectUrl: http://localhost:8081/realms/agrirouter/.well-known/openid-configuration

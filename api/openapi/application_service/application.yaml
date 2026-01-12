@@ -1,0 +1,935 @@
+openapi: "3.0.2"
+
+info:
+  title: Application Service
+  description: This is the application service API documentation. It provides endpoints to manage applications and their software versions.
+  version: "1.0"
+  contact:
+    name: DKE-Data GmbH & Co. KG
+    email: info@dke-data.com
+    url: https://dke-data.com
+servers:
+  - url: http://application.localhost:{port}
+    variables:
+      port:
+        default: "8000"
+  - url: http://localhost:{port}
+    variables:
+      port:
+        default: "8080"
+  - url: https://application-service.dev.agrirouter.farm
+    description: dev
+  - url: https://application-service.qa.agrirouter.farm
+    description: qa
+  - url: https://application-service.prod.agrirouter.farm
+    description: prod
+
+
+security:
+  - openIdLocalhost:
+      - "developer"
+  - openIdLocalK3d:
+      - "developer"
+  - openIdDev:
+      - "developer"
+  - openIdQa:
+      - "developer"
+
+paths:
+  /applications:
+    get:
+      summary: Get application by Tenant ID
+      description: Get all applications for a specific tenant
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/applicationsList"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    post:
+      summary: Create a new application
+      description: Create a new application for your tenant
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/applicationCreateBody"
+      responses:
+        "201":
+          description: application created successfully
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/application"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /applications/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      summary: Update a application by ID
+      description: Update existing application by ID and Tenant ID
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/applicationUpdateBody"
+      responses:
+        "200":
+          description: application updated successfully
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/application"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          description: application not found
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    get:
+      summary: Finds an application by ID
+      description: Get existing application by ID and Tenant ID
+      operationId: GetApplicationById
+      security:
+        - openIdLocalK3d:
+            - "developer"
+            - "farmer"
+        - openIdLocalhost:
+            - "developer"
+            - "farmer"
+        - openIdDev:
+            - "developer"
+            - "farmer"
+        - openIdQa:
+            - "developer"
+            - "farmer"
+      responses:
+        "200":
+          description: application found
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/application"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    delete:
+      summary: Delete a application by ID
+      description: Delete existing application by ID and Tenant ID
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      responses:
+        "204":
+          description: application deleted successfully
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          description: application not found
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /applications/software-version:
+    get:
+      description: Get all software versions for all applications for Admin UI. It is also possible to filter for state.
+      security:
+        - openIdLocalK3d:
+            - "administrator"
+        - openIdLocalhost:
+            - "administrator"
+        - openIdDev:
+            - "administrator"
+        - openIdQa:
+            - "administrator"
+      parameters:
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ["NEW", "SUBMITTED", "REJECTED", "BLOCKED", "APPROVED_FOR_TESTING", "APPROVED"]
+          style: form
+          explode: false
+          examples:
+            all-states:
+              value: []
+            multiple-states:
+              value: ["REJECTED", "BLOCKED"]
+              description: "Returns all software versions which have been rejected or blocked"
+      summary: All applications and their software versions
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/application_software_version"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /applications/{id}/software-versions:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Create a new software version
+      description: Create a new software version for an application
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/new_software_version"
+      responses:
+        "201":
+          description: software version created successfully
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/software_version_creation_response"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    get:
+      description: Get all software versions for an application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/x-tenant-id"
+      summary: Get list of software versions by application ID
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/software_version"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /applications/{id}/logo:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get logo for an application
+      description: Get logo for an application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - openIdLocalK3d:
+            - "developer"
+            - "farmer"
+        - openIdLocalhost:
+            - "developer"
+            - "farmer"
+        - openIdDev:
+            - "developer"
+            - "farmer"
+        - openIdQa:
+            - "developer"
+            - "farmer"
+      responses:
+        "200":
+          description: Logo found
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/logo"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          description: Application or Logo not found
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    put:
+      summary: Update logo for an application
+      description: Update logo for an application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/x-tenant-id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/logo"
+      responses:
+        "200":
+          description: Logo updated successfully
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/logoUrl"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          description: Application or Logo not found
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    delete:
+      summary: Delete logo for an application
+      description: Delete logo for an application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/x-tenant-id"
+      responses:
+        "204":
+          description: Logo deleted successfully
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          description: Application or Logo not found
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+  /applications/{id}/software-versions/{versionId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get software version by ID
+      description: Get software version by ID
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/software_version"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+      security:
+        - openIdLocalK3d:
+            - "developer"
+            - "farmer"
+        - openIdLocalhost:
+            - "developer"
+            - "farmer"
+        - openIdDev:
+            - "developer"
+            - "farmer"
+        - openIdQa:
+            - "developer"
+            - "farmer"
+    delete:
+      summary: Delete a software version by ID
+      description: Delete a software version by ID
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      responses:
+        "204":
+          description: Software version deleted successfully
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          description: Software version not found
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /applications/{id}/software-versions/{versionId}/availability:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: AdminVersionAvailability
+      summary: Admin will update public flag of an approved version
+      description: Set software version to public or private to change availability for users.
+      security:
+        - openIdLocalK3d:
+            - "administrator"
+        - openIdLocalhost:
+            - "administrator"
+        - openIdDev:
+            - "administrator"
+        - openIdQa:
+            - "administrator"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isPublic:
+                  type: boolean
+      responses:
+        "200":
+          $ref: ../common/responses/success.yaml
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /applications/{id}/software-versions/{versionId}/submission:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: "#/components/parameters/x-tenant-id"
+    post:
+      summary: Dev submit version for certification request
+      description: Submit a software version for certification to start approval process.
+      operationId: DevVersionSubmission
+      responses:
+        "200":
+          $ref: ../common/responses/success.yaml
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /applications/{id}/software-versions/{versionId}/certification:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      description: >
+        # Certification flow
+
+        * a `SUBMITTED` version can either change to `APPROVED_FOR_TESTING` or `REJECTED`
+
+        * an `APPROVED_FOR_TESTING` can either change to `APPROVED` or `REJECTED`
+
+        * an `APPROVED` can not change its certification anymore
+      summary: Admin will update version certification (version status)
+      operationId: AdminSubmitCertification
+      security:
+        - openIdLocalK3d:
+            - "administrator"
+        - openIdLocalhost:
+            - "administrator"
+        - openIdDev:
+            - "administrator"
+        - openIdQa:
+            - "administrator"
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              enum:
+                - "REJECTED"
+                - "APPROVED_FOR_TESTING"
+                - "APPROVED"
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/software_version"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /applications/{id}/software-versions/{versionId}/description:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      summary: Update software version description
+      description: Update only the software version description.
+      operationId: DevUpdateDescription
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/versionDescription"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /applications/{id}/software-versions/{versionId}/capabilities:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      summary: Update software version capabilities
+      description: Add or remove capabilities of a software version.
+      operationId: DevUpdateVersionCapabilities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/capabilities"
+      responses:
+        "200":
+          description: Successful response
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/capabilities"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+components:
+  parameters:
+    x-tenant-id:
+      in: header
+      name: x-tenant-id
+      schema:
+        type: string
+      required: true
+      description: The tenant id to scope the request to
+      examples:
+        system-tests-tenant:
+          value: "00000000-0000-0000-0000-000000000001"
+        user1-tenant:
+          value: "980e3993-1cbc-428c-bce0-2d98fc8e5436"
+  schemas:
+    application_types:
+      type: string
+      enum:
+        - TELEMETRY_PLATFORM
+        - COMMUNICATION_UNIT
+        - FARMING_SOFTWARE
+    application:
+      allOf:
+        - $ref: "#/components/schemas/applicationCreateBody"
+        - $ref: "#/components/schemas/applicationUpdateBody"
+        - type: object
+          required:
+            - tenant_id
+            - id
+            - logo_url
+          properties:
+            tenant_id:
+              type: string
+            id:
+              type: string
+              format: uuid
+            logo_url:
+              type: string
+    applicationBody:
+      type: object
+      required:
+        - name
+        - description
+        - brand
+        - support_url
+      properties:
+        name:
+          type: string
+          maxLength: 256
+        description:
+          type: string
+          maxLength: 4096
+        brand:
+          type: string
+        support_url:
+          type: string
+          format: uri
+        deep_url:
+          type: string
+          format: uri
+    applicationCreateBody:
+      allOf:
+        - $ref: "#/components/schemas/applicationBody"
+        - type: object
+          required:
+            - type
+          properties:
+            type:
+              $ref: "#/components/schemas/application_types"
+    applicationUpdateBody:
+      allOf:
+        - $ref: "#/components/schemas/applicationBody"
+        - type: object
+          required:
+            - redirect_url
+            - public_key
+          properties:
+            redirect_url:
+              type: array
+              items:
+                type: string
+                format: url
+            public_key:
+              type: string
+
+    applicationsList:
+      type: array
+      items:
+        $ref: "#/components/schemas/application"
+    capabilities:
+      type: object
+      properties:
+        name:
+          type: string
+        can_send:
+          type: boolean
+        can_receive:
+          type: boolean
+    new_software_version:
+      type: object
+      required:
+        - version_number
+        - description
+      properties:
+        version_number:
+          type: integer
+          format: int32
+          minimum: 1
+        description:
+          type: string
+    application_status:
+      type: string
+      enum:
+        - "NEW"
+        - "SUBMITTED"
+        - "REJECTED"
+        - "BLOCKED"
+        - "APPROVED_FOR_TESTING"
+        - "APPROVED"
+    software_version_creation_response:
+      type: object
+      required:
+        - id
+        - application_id
+        - status
+        - description
+      properties:
+        id:
+          type: string
+          format: uuid
+        application_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - NEW
+        description:
+          type: string
+    software_version:
+      allOf:
+        - $ref: "#/components/schemas/new_software_version"
+        - type: object
+          required:
+            - id
+            - status
+            - application_id
+          properties:
+            id:
+              type: string
+              format: uuid
+            application_id:
+              type: string
+              format: uuid
+            status:
+              $ref: "#/components/schemas/application_status"
+            capabilities:
+              type: array
+              items:
+                $ref: "#/components/schemas/capabilities"
+            isPublic:
+              type: boolean
+    application_software_version:
+      type: object
+      required:
+        - application
+        - software_versions
+      properties:
+        application:
+          $ref: "#/components/schemas/application"
+        software_versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/software_version"
+    logo:
+      type: object
+      properties:
+        image:
+          type: string
+          pattern: '^data:image\/(png|gif|jpe?g);base64,[a-zA-Z0-9+/]+=*$'
+      required:
+        - image
+    logoUrl:
+      type: object
+      properties:
+        logo_url:
+          type: string
+          format: uri
+      required:
+        - url
+    versionDescription:
+      type: object
+      required:
+        - description
+      properties:
+        description:
+          type: string
+
+  securitySchemes:
+    openIdLocalhost:
+      $ref: ../common/security/openid_local.yaml
+    openIdDev:
+      $ref: ../common/security/openid_dev.yaml
+    openIdQa:
+      $ref: ../common/security/openid_qa.yaml

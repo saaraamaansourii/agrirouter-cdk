@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package gateway_service;
+
+message VcuOnboardEndpointsEvent {
+    message EndpointRegistrationDetails {
+        string id = 1;    // External ID from the cloud provider - REQUIRED
+        string name = 2;  // Name of this virtualized application from the cloud provider. Is mapped to the Endpoints name of the agrirouter - REQUIRED
+    }
+
+    repeated EndpointRegistrationDetails onboarding_requests = 1; // Collection of virtualized endpoint the external cloud is managing for the associated agrirouter account. At least one valid request is required
+
+    google.protobuf.Timestamp timestamp = 2;  // Timestamp of the incoming message
+    string application_message_id = 3;        // Client generated Message ID it would use to uniquly identify the message it has sent
+    string endpoint_id = 4;                     // Identifier of the endpoint that have sent command
+    string message_id = 5;                      // Unique Agrirouter generated message identifier
+}

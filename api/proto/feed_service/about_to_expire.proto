@@ -1,0 +1,16 @@
+syntax = "proto3";
+package feed_service;
+
+import "google/protobuf/timestamp.proto";
+
+message TenantMessagesAboutToExpire {
+     message EndpointMessagesAboutToExpire {
+        string endpoint_id = 1;                         // ID of specific endpoint whose messages are about to expire
+        int32 message_count = 2;               // Number of messages that are about to expire for that endpoint
+    }
+
+    string tenant_id = 1;                               // Tenant to whom email should be sent about its belonging endpoints
+    repeated EndpointMessagesAboutToExpire messages_per_endpoint = 2;   // List of endpoints that have messages about to expire
+    google.protobuf.Timestamp expirationDate = 3;    // Timestamp of expiry of the message(s)
+}
+

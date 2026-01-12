@@ -1,0 +1,13 @@
+type: object
+required:
+  - name
+  - description
+properties:
+  name:
+    type: string
+    description: Name of the endpoint
+  description:
+    type: string
+    description: Description of the endpoint
+  machine_type:
+    $ref: "./machine_type.yaml"

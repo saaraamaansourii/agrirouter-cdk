@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@bufbuild/buf": "^1.29.0",
+    "@stoplight/spectral-cli": "^6.15.0"
+  }
+}

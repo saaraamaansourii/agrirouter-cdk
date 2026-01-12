@@ -1,0 +1,2 @@
+# This directory is used by CDK to bundle the pymssql layer
+# The actual dependencies will be installed during CDK synthesis

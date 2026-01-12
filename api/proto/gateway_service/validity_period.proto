@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package gateway_service;
+
+import "google/protobuf/timestamp.proto";
+
+message ValidityPeriod {
+  google.protobuf.Timestamp sent_from = 1;      // From date for the query should be UTC
+  google.protobuf.Timestamp sent_to = 2;        // To date for the query should be UTC
+}

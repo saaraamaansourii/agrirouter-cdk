@@ -1,0 +1,181 @@
+openapi: 3.0.3
+
+info:
+  title: Feed Service
+  version: "1.0"
+  description: Feed service internal API
+  contact:
+    name: DKE-Data GmbH & Co. KG
+    email: info@dke-data.com
+    url: https://dke-data.com
+servers:
+  - url: http://feed.localhost:{port}
+    variables:
+      port:
+        default: "8000"
+  - url: http://localhost:{port}
+    variables:
+      port:
+        default: "8080"
+  - url: https://feed-service.dev.agrirouter.farm
+    description: dev
+  - url: https://feed-service.qa.agrirouter.farm
+    description: qacl
+  - url: https://feed-service.prod.agrirouter.farm
+    description: prod
+
+security:
+  - openIdLocalhost:
+      - "farmer"
+  - openIdLocalK3d:
+      - "farmer"
+  - openIdDev:
+      - "farmer"
+  - openIdQa:
+      - "farmer"
+
+paths:
+  /feed/{endpointId}:
+    get:
+      operationId: getFeedByEndpointId
+      description: Return information for an endpoint's feed
+      parameters:
+        - name: endpointId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/feedResponse"
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /last-messages/{endpointId}:
+    get:
+      operationId: getLastMessages
+      description: Return last messages of an endpoint's feed
+      parameters:
+        - name: endpointId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The unique identifier for the endpoint
+        - in: query
+          name: filter
+          required: false
+          schema:
+            type: string
+            enum: [last_messages_sent, last_messages_confirmed]
+          description: Filter to apply to the feed (last_messages_sent or last_messages_confirmed)
+        - in: header
+          name: x-tenant-id
+          required: true
+          schema:
+            type: string
+          description: Tenant ID to scope the request to
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/lastMessage"
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "400":
+          $ref: ../common/responses/unauthorized.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+components:
+  schemas:
+    messageInfo:
+      type: object
+      required:
+        - date-time
+        - message_type
+      properties:
+        date-time:
+          type: string
+          format: date-time
+        message_type:
+          type: string
+    feedResponse:
+      type: object
+      properties:
+        last_message_received:
+          $ref: "#/components/schemas/messageInfo"
+        last_message_sent:
+          $ref: "#/components/schemas/messageInfo"
+        message_count:
+          type: number
+        oldest_in_feed:
+          $ref: "#/components/schemas/messageInfo"
+        latest_in_feed:
+          $ref: "#/components/schemas/messageInfo"
+    lastMessage:
+      type: object
+      required:
+        - message_id
+        - sent_timestamp
+        - message_type
+        - recipients_or_sender
+        - size
+      properties:
+        message_id:
+          type: string
+          format: uuid
+        sent_timestamp:
+          type: string
+          format: date-time
+        message_type:
+          type: string
+        recipients_or_sender:
+          type: array
+          items:
+            type: string
+            format: uuid
+        chunk:
+          type: integer
+          format: int64
+          example: 1
+        total_chunks:
+          type: integer
+          format: int64
+          example: 3
+        size:
+          type: integer
+          format: int64
+          example: 100
+  securitySchemes:
+    openIdLocalhost:
+      $ref: ../common/security/openid_local.yaml
+    openIdDev:
+      $ref: ../common/security/openid_dev.yaml
+    openIdQa:
+      $ref: ../common/security/openid_qa.yaml

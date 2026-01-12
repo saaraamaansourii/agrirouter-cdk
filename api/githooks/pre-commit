@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -e
+
+# TODO: uncomment when all linting is corrected
+$(dirname -- "${BASH_SOURCE[0]}")/../tools/openapi_lint.sh
+
+# Check if protos are not breaking and lint them
+if [ -z "$ALLOW_BREAK_PROTO" ]; then
+    unset $(git rev-parse --local-env-vars) # workaround, recommendation from https://git-scm.com/docs/githooks
+    $(dirname -- "${BASH_SOURCE[0]}")/../tools/proto_breaking.sh
+fi
+
+$(dirname -- "${BASH_SOURCE[0]}")/../tools/proto_lint.sh

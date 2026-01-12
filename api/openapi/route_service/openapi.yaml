@@ -1,0 +1,255 @@
+openapi: 3.0.3
+info:
+  title: Route Service API
+  version: 1.0.0
+  description: The API to manange routes on agrirouter.
+  contact:
+    name: DKE-Data GmbH & Co. KG
+    email: info@dke-data.com
+    url: https://dke-data.com
+servers:
+  - url: http://route.localhost:{port}
+    variables:
+      port:
+        default: "8000"
+  - url: http://localhost:{port}
+    description: Localhost Server
+    variables:
+      port:
+        default: "8080"
+  - url: https://route-service.dev.agrirouter.farm
+    description: Development Server
+  - url: https://route-service.qa.agrirouter.farm
+    description: QA Server
+  - url: https://route-service.prod.agrirouter.farm
+    description: Production Server
+
+security:
+  - openIdLocalhost:
+      - "farmer"
+  - openIdLocalK3d:
+      - "farmer"
+  - openIdDev:
+      - "farmer"
+  - openIdQa:
+      - "farmer"
+
+paths:
+  /v2/routes:
+    post:
+      operationId: createRoute
+      summary: Create a route between two endpoints
+      description: Create a route between two endpoints
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/routeV2"
+      responses:
+        "201":
+          description: Successfully created
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/routeV2"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "409":
+          $ref: ../common/responses/conflict.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    get:
+      operationId: getRoutesV2
+      summary: Get all routes
+      description: Get all routes for a tenant
+      parameters:
+        - $ref: "#/components/parameters/x-tenant-id"
+      responses:
+        "200":
+          description: "Successfully retrieved all routes"
+          headers:
+            x-request-id:
+              $ref: "../common/headers.yaml#/x-request-id"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/routeV2"
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /v2/routes/{id}:
+    put:
+      operationId: updateRoute
+      summary: Update a route
+      description: Update a route between two endpoints
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: "Route id to modify"
+        - $ref: "#/components/parameters/x-tenant-id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/routeV2"
+      responses:
+        "200":
+          description: Successfully updated
+          headers:
+            x-request-id:
+              $ref: "../common/headers.yaml#/x-request-id"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/routeV2"
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/not_found.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /routes/{id}:
+    delete:
+      summary: Delete a route
+      description: Delete a route by its identifier
+      parameters:
+        - in: header # remove the header for routes that are not scoped to a specific tenant
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: "Route id to delete"
+      responses:
+        "204":
+          description: Successfully deleted
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "404":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+  /settings/{endpointId}:
+    put:
+      summary: Update settings
+      description: Update the default route creation settings for an endpoint
+      operationId: changeEndpointSettings
+      parameters:
+        - in: header # remove the header for routes that are not scoped to a specific tenant
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+        - in: path
+          name: endpointId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: "Endpoint id of endpoint to change settings for"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/endpoint_setting"
+      responses:
+        "200":
+          description: "Successfully updated the setting of this endpoint"
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+        "404":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+    get:
+      summary: Retrieve settings
+      description: Retrieve the default route creation settings for an endpoint
+      operationId: getEndpointSettings
+      parameters:
+        - in: header # remove the header for routes that are not scoped to a specific tenant
+          name: x-tenant-id
+          schema:
+            type: string
+          required: true
+          description: "Tenant id to scope the request to"
+        - in: path
+          name: endpointId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: "Endpoint id of endpoint to get settings of"
+      responses:
+        "200":
+          description: "Successfully retrieved the setting of this endpoint"
+          headers:
+            x-request-id:
+              description: "Unique ID to identify the request."
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/endpoint_setting"
+        "404":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+components:
+  parameters:
+    x-tenant-id:
+      in: header
+      name: x-tenant-id
+      schema:
+        type: string
+      required: true
+      description: The tenant id to scope the request to
+      examples:
+        system-tests-tenant:
+          value: "00000000-0000-0000-0000-000000000001"
+        user1-tenant:
+          value: "980e3993-1cbc-428c-bce0-2d98fc8e5436"
+  schemas:
+    routeV2:
+      $ref: "./route_v2.yaml"
+    endpoint_setting:
+      $ref: "./endpoint_setting.yaml"
+
+  securitySchemes:
+    openIdLocalhost:
+      $ref: "../common/security/openid_local.yaml"
+    openIdDev:
+      $ref: "../common/security/openid_dev.yaml"
+    openIdQa:
+      $ref: "../common/security/openid_qa.yaml"

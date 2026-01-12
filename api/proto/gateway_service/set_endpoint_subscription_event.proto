@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package gateway_service;
+
+// Event sent by gateway whenever endpoint sends new subscription
+// 
+// These events would be sent via Kafka topic.
+// Topic name: set_endpoint_subscription.event
+message SetEndpointSubscriptionEvent {    
+    message MessageTypeSubscriptionItem {
+        string technical_message_type = 1;   // Technical Message type from the agrirouter
+        repeated uint32 ddis = 2;            // Applicable only for Telemetry Messages these are the DDI Codes to subscribe to
+        bool position = 3;                   // Applicable only for Telemetry Messages to subscribe to GeoLocation Position information
+    }
+
+    repeated MessageTypeSubscriptionItem technical_message_types = 1;   // List of message types to subscribe to subscriptions
+
+    google.protobuf.Timestamp timestamp = 2;    // Timestamp of the incoming message
+    string application_message_id = 3;          // Client generated Message ID it would use to uniquly identify the message it has sent
+    string endpoint_id = 4;                     // Identifier of the endpoint that have sent command
+    string message_id = 5;                      // Unique Agrirouter generated message identifier
+    string vcu_endpoint_id = 6;                 // Identifier of the VCU that have actually sent command if it was forwarded by telemetry platform
+}

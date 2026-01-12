@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package endpoint_service;
+
+message ListEndpointsResponse {
+  enum Direction {                            // Defines the direction the rules should be configured for the endpoint lists
+    UNKNOWN_DIRECTION = 0;
+    SEND = 1;                                 // Remote endpoint can send requested technical message type
+    RECEIVE = 2;                              // Remote endpoint can receive requested technical message type
+    SEND_RECEIVE = 3;                         // Remote endpoint can send or receive requested technical message type
+  }
+
+
+  message MessageType {
+    string technical_message_type = 1;        // The agrirouter technical message type
+    Direction direction = 2;                  // The direction in which the message type can flow
+  }
+
+  message Endpoint {
+    string endpoint_id = 1;                   // ID Of the endpoint for which the message types can be sent
+    string endpoint_name = 2;                 // Text name of the endpoint
+    string endpoint_type = 3;                 // The type of end point IE: Application, Paired Account, Virtual CU, etc
+    string status = 4;                        // Specifies if the endpoint is active or inactive
+    repeated MessageType message_types = 5;   // Details of the message types as detailed above
+    string external_id = 6;                   // External id of the endpoint
+  }
+
+    enum Status {
+      UNKNOWN_STATUS = 0;                   
+      ACK = 1;                                // Acknowledgement, Status OK
+      ACK_WITH_FAILURE = 2;                   // Acknowledgement with failure, Decoding Error, Malformed Message
+      ACK_WITH_VALIDATION_ERROR = 3;          // Acknowledgement with failure, Validation or Internal Server Error
+    }
+
+  Status status = 1;                          // Status of the acknowledgement, Ack with failure in case there is a decoding or internal server error 
+  repeated Endpoint endpoints = 2;            // Collection of endpoints pertaining to the requested endpoint listing
+  string message_id = 3;
+  string application_message_id = 4;
+  string endpoint_id = 5;
+  string vcu_endpoint_id = 6;                 // Identifier of the VCU that have actually sent command if it was forwarded by telemetry platform
+}

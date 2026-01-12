@@ -1,0 +1,8 @@
+{
+  "availability-zones:account=592579839809:region=eu-central-1": [
+    "eu-central-1a",
+    "eu-central-1b",
+    "eu-central-1c"
+  ],
+  "cli-telemetry": false
+}

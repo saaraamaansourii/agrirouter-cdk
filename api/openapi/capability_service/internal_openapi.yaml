@@ -1,0 +1,130 @@
+openapi: 3.1.1
+info:
+  title: Internal Capability Service API
+  version: 1.0.0
+  description: |
+    The API to manage endpoint capabilities on agrirouter internally.
+    Designed to be called only from agrirouter API gateway.
+  contact:
+    name: DKE-Data GmbH & Co. KG
+    email: info@dke-data.com
+    url: https://dke-data.com
+servers:
+  - url: http://capability.localhost:{port}
+    variables:
+      port:
+        default: "8000"
+  - url: http://localhost:{port}
+    description: Localhost Server
+    variables:
+      port:
+        default: "8080"
+  - url: https://capability-service-internal.qa.agrirouter.farm
+    description: QA Server
+  - url: https://capability-service-internal.prod.agrirouter.farm
+    description: Production Server
+
+paths:
+  /internal/endpoints/{id}/config:
+    put:
+      summary: Set capabilities and subscriptions for an endpoint internally
+      description: |
+        This resource allows internal services to configure
+        endpoint capabilities and subscriptions in the agrirouter.
+        Both capabilities and subscriptions must be provided
+        and would be reset to the provided values.
+        It is impossible to change capabilities or subscriptions separately.
+      operationId: setEndpointConfig
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The ID of the endpoint to set capabilities and subscriptions for.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EndpointConfig"
+      responses:
+        "204":
+          description: Successfully set endpoint capabilities and subscriptions
+          headers:
+            x-request-id:
+              $ref: ../common/headers.yaml#/x-request-id
+        "404":
+          description: Endpoint not found
+          headers:
+            x-request-id:
+              $ref: ../common/headers.yaml#/x-request-id
+        "400":
+          $ref: ../common/responses/bad_request.yaml
+        "500":
+          $ref: ../common/responses/internal_server_error.yaml
+
+security:
+  - AgrirouterInternal: []
+
+components:
+  securitySchemes:
+    AgrirouterInternal:
+      type: mutualTLS
+      description: |
+        This security scheme is used for internal calls to the agrirouter capability service.
+        It requires mutual TLS authentication with a valid agrirouter API gateway certificate.
+  schemas:
+    EndpointConfig:
+      type: object
+      required:
+        - software_version_id
+        - capabilities
+        - subscriptions
+      properties:
+        software_version_id:
+          type: string
+          format: uuid
+          description: The ID of the software version that endpoint uses.
+        capabilities:
+          type: array
+          description: The effective capabilities of the endpoint, must be subset of the capabilities of software version.
+          items:
+            $ref: "#/components/schemas/EndpointCapability"
+        subscriptions:
+          type: array
+          description: The message types that the endpoint is subscribed to.
+          items:
+            $ref: "#/components/schemas/EndpointSubscription"
+    EndpointCapability:
+      type: object
+      required:
+        - message_type
+        - direction
+      properties:
+        message_type:
+          type: string
+          example: "iso:11783:-10:taskdata:zip"
+          description: |
+            The message type that the endpoint can send or receive.
+            See available types here:
+            https://docs.agrirouter.com/agrirouter-interface-documentation/latest/tmt/overview.html
+        direction:
+          type: string
+          enum:
+            - "SEND"
+            - "RECEIVE"
+            - "SEND_RECEIVE"
+    EndpointSubscription:
+      type: object
+      required:
+        - message_type
+      properties:
+        message_type:
+          type: string
+          example: "iso:11783:-10:taskdata:zip"
+          description: |
+            The message type that the endpoint is subscribed to.
+            See available types here:
+            https://docs.agrirouter.com/agrirouter-interface-documentation/latest/tmt/overview.html

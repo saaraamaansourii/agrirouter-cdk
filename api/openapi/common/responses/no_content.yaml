@@ -1,0 +1,6 @@
+description: no content
+headers:
+  x-request-id:
+    description: "Unique ID to identify the request."
+    schema:
+      type: string

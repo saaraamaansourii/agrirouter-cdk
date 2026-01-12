@@ -1,0 +1,47 @@
+type: string
+description: Identifier for the type of machine this endpoint represents
+enum:
+  - tractor
+  - tractor-narrow-track
+  - beet-harvester
+  - combine
+  - field-robot
+  - field-robot-2
+  - forage-harvester
+  - forage-harvester-front-mount-grass
+  - forage-harvester-without-front-mount
+  - grape-harvester
+  - potate-harvester-self-propelled
+  - self-propelled-feed-mixer
+  - sprayer-self-propelled
+  - telescoping-handler
+  - tractor-with-baler-wrapper
+  - tractor-with-combi-wagon
+  - tractor-with-convey-rotor
+  - tractor-with-cultivator
+  - tractor-with-disc-harrow
+  - tractor-with-drill
+  - tractor-with-feed-mixer
+  - tractor-with-front-and-rear-mower
+  - tractor-with-front-mower
+  - tractor-with-harrow
+  - tractor-with-hoe-with-camera
+  - tractor-with-loading-wagon
+  - tractor-with-mounted-sprayer
+  - tractor-with-multi-purpose-spreader
+  - tractor-with-other-wagon
+  - tractor-with-planter
+  - tractor-with-potato-harvester
+  - tractor-with-precision-planter
+  - tractor-with-pull-type-spreader
+  - tractor-with-rake
+  - tractor-with-rear-mower
+  - tractor-with-round-bale-wrapper
+  - tractor-with-round-baler
+  - tractor-with-semi-mounted-plough
+  - tractor-with-slurry-tanker-with-hose-system
+  - tractor-with-slurry-tanker-without-hose-system
+  - tractor-with-spreader
+  - tractor-with-square-baler-wrapper
+  - tractor-with-square-baler
+  - tractor-with-tedder

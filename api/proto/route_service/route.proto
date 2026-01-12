@@ -1,0 +1,29 @@
+syntax = "proto3";
+package route_service;
+
+import "common.proto";
+
+// Event when a message type is changing
+message Route {
+  agrirouter.common.StateChangeMetadata metadata = 1;
+  RouteState state = 2;
+}
+
+message Capability {
+  string technical_message_type = 1;
+  bool is_valid = 2;
+  bool is_default = 3;
+}
+message RouteInformationType {
+  string information_type_id = 1;
+}
+
+message RouteState {
+  string ID = 1;
+  string SourceID = 2;
+  string RecipientID = 3;
+  string TenantID = 4;
+  string AppVersionID = 5;
+  reserved 6; // route message types were removed
+  repeated RouteInformationType route_information_types = 7;
+}

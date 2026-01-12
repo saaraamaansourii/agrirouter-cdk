@@ -1,0 +1,31 @@
+syntax = "proto3";
+package application_service;
+
+import "common.proto";
+
+// Event when a message type is changing
+message Application {
+  agrirouter.common.StateChangeMetadata metadata = 1;
+  ApplicationState state = 2;
+}
+
+message ApplicationState {
+  string tenantId = 1;
+  string name = 2;
+  string description = 3;
+  string type = 4;
+  string logoUrl = 5;
+  string brand = 6;
+  string supportUrl = 7;
+  string deepUrl = 8;
+  repeated string redirectUrl = 9;
+  string publicKey = 10;
+  string versionTag = 11;
+  enum ApplicationType {
+       UNKNOWN = 0;
+       COMMUNICATION_UNIT = 1;
+       FARMING_SOFTWARE = 2;
+       TELEMETRY_PLATFORM = 3;
+    }
+    ApplicationType applicationType = 12;
+}

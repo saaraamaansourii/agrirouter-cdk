@@ -1,0 +1,4 @@
+description: success
+headers:
+  x-request-id:
+    $ref: ../headers.yaml#/x-request-id
