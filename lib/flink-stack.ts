@@ -7,6 +7,7 @@ import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as kinesisanalyticsv2 from 'aws-cdk-lib/aws-kinesisanalyticsv2';
 import { Construct } from 'constructs';
+import { ArnFormat } from 'aws-cdk-lib';
 
 interface FlinkStackProps extends cdk.StackProps {
   vpc: ec2.Vpc;
@@ -83,7 +84,7 @@ export class FlinkStack extends cdk.Stack {
 
     // Upload local artifact (ZIPFILE) into the dedicated bucket at a stable key.
     // This makes updates predictable: replace `flink-app/app.zip` and redeploy.
-    new s3deploy.BucketDeployment(this, 'DeployFlinkArtifact', {
+    const deployFlinkArtifact = new s3deploy.BucketDeployment(this, 'DeployFlinkArtifact', {
       destinationBucket: artifactBucket,
       destinationKeyPrefix: 'artifacts',
       sources: [s3deploy.Source.asset('flink-app')],
@@ -104,17 +105,38 @@ export class FlinkStack extends cdk.Stack {
     sqlServerCredentialsSecret.grantRead(flinkRole);
 
     // Allow writing logs
-    flinkRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: ['logs:DescribeLogStreams', 'logs:CreateLogStream', 'logs:PutLogEvents'],
-        resources: [logGroup.logGroupArn, `${logGroup.logGroupArn}:*`],
-      })
-    );
+    flinkRole.addToPolicy(new iam.PolicyStatement({
+      actions: [
+        'logs:DescribeLogStreams',
+        'logs:CreateLogStream',
+        'logs:PutLogEvents',
+      ],
+      resources: [
+        logGroup.logGroupArn,
+        `${logGroup.logGroupArn}:log-stream:*`,
+      ],
+    }));
 
-    // Allow VPC networking for KDA
-    flinkRole.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonKinesisAnalyticsVPCAccessExecutionRole')
-    );
+    // Allow VPC networking (ENI management) for Amazon Managed Service for Apache Flink
+    flinkRole.addToPolicy(new iam.PolicyStatement({
+      actions: [
+        'ec2:DescribeVpcs',
+        'ec2:DescribeSubnets',
+        'ec2:DescribeSecurityGroups',
+        'ec2:DescribeDhcpOptions',
+      ],
+      resources: ['*'],
+    }));
+
+    flinkRole.addToPolicy(new iam.PolicyStatement({
+      actions: [
+        'ec2:CreateNetworkInterface',
+        'ec2:CreateNetworkInterfacePermission',
+        'ec2:DescribeNetworkInterfaces',
+        'ec2:DeleteNetworkInterface',
+      ],
+      resources: ['*'],
+    }));
 
     // --- Networking ---
     const privateSubnets = vpc.selectSubnets({ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS });
@@ -200,19 +222,27 @@ export class FlinkStack extends cdk.Stack {
       },
     });
 
-// CloudWatch logging option is a separate CFN resource.
-const logStreamArn = cdk.Stack.of(this).formatArn({
-  service: 'logs',
-  resource: 'log-group',
-  resourceName: `${logGroup.logGroupName}:log-stream:${logStream.logStreamName}`,
-});
+    application.node.addDependency(deployFlinkArtifact);
 
-new kinesisanalyticsv2.CfnApplicationCloudWatchLoggingOption(this, 'FlinkCloudWatchLogging', {
-  applicationName: application.ref,
-  cloudWatchLoggingOption: {
-    logStreamArn,
-  },
-});
+    const logStreamArn = cdk.Stack.of(this).formatArn({
+      service: 'logs',
+      resource: 'log-group',
+      resourceName: `${logGroup.logGroupName}:log-stream:${logStream.logStreamName}`,
+      arnFormat: ArnFormat.COLON_RESOURCE_NAME, // <-- CRITICAL for CloudWatch Logs
+    });
+
+    // CloudWatch logging option is a separate CFN resource.
+    const loggingOption =
+      new kinesisanalyticsv2.CfnApplicationCloudWatchLoggingOption(this, 'FlinkCloudWatchLogging', {
+        applicationName: application.ref,
+        cloudWatchLoggingOption: {
+          logStreamArn,
+        },
+      });
+
+    // Ensure resources exist before logging option is created
+    loggingOption.node.addDependency(application);
+    loggingOption.node.addDependency(logStream);
 
     this.flinkApplicationName = application.applicationName ?? 'agrirouter-analytics-flink';
     this.artifactBucket = artifactBucket;

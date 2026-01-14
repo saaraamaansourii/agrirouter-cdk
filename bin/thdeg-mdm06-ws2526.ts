@@ -7,7 +7,10 @@ import { FlinkStack } from '../lib/flink-stack';
 
 const app = new cdk.App();
 
-const env = { account: '592579839809', region: 'eu-central-1' };
+const env = {
+  account: process.env.CDK_DEFAULT_ACCOUNT,
+  region: process.env.CDK_DEFAULT_REGION,
+};
 
 // Shared compute infrastructure stack (VPC, Security Groups, ECS Cluster for Kafka PoC)
 const computeStack = new ComputeStack(app, 'ComputeStack', {
@@ -42,6 +45,6 @@ const flinkStack = new FlinkStack(app, 'FlinkStack', {
   sqlServerEndpoint: databaseStack.sqlServerInstance.instanceEndpoint.hostname,
   sqlServerPort: databaseStack.sqlServerInstance.instanceEndpoint.port.toString(),
 });
-// flinkStack.addDependency(computeStack);
+flinkStack.addDependency(computeStack);
 flinkStack.addDependency(kafkaStack);
 flinkStack.addDependency(databaseStack);
