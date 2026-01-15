@@ -71,6 +71,11 @@ export class ComputeStack extends cdk.Stack {
     });
 
     // Allow database connections from ANYWHERE (public internet)
+        this.databaseSecurityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(5432),
+      'PostgreSQL access from internet'
+    );
     this.databaseSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(1433),
@@ -78,6 +83,11 @@ export class ComputeStack extends cdk.Stack {
     );
 
     // Allow cross-communication between Kafka and Database security groups
+    this.databaseSecurityGroup.addIngressRule(
+      this.kafkaSecurityGroup,
+      ec2.Port.tcp(5432),
+      'PostgreSQL access from Kafka'
+    );
     this.databaseSecurityGroup.addIngressRule(
       this.kafkaSecurityGroup,
       ec2.Port.tcp(1433),

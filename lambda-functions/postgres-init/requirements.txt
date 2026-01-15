@@ -1,0 +1,5 @@
+# PostgreSQL Lambda Function Dependencies
+# These are provided via Lambda Layer (built by CDK)
+
+psycopg2-binary==2.9.9
+boto3>=1.28.0

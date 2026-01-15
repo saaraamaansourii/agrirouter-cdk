@@ -17,6 +17,11 @@ interface FlinkStackProps extends cdk.StackProps {
   kafkaCredentialsSecret: secretsmanager.Secret;
   kafkaBootstrapServers: string;
 
+  // PostgreSQL
+  postgresCredentialsSecret: secretsmanager.Secret;
+  postgresEndpoint: string;
+  postgresPort: string;
+
   // SQL Server
   sqlServerCredentialsSecret: secretsmanager.Secret;
   sqlServerEndpoint: string;
@@ -29,7 +34,7 @@ interface FlinkStackProps extends cdk.StackProps {
  * Notes:
  * - This stack only provisions the Flink application + its IAM role + networking.
  * - The Flink job artifact is uploaded to a dedicated S3 bucket by CDK from `flink-app/app.zip`.
- *   Replace that file with a real Flink application ZIP (example starter provided under `flink-job-sample/`).
+ * - The Flink application reads configuration (Kafka + SQL Server connection info) from property groups.
  */
 export class FlinkStack extends cdk.Stack {
   public readonly flinkApplicationName: string;
@@ -46,6 +51,9 @@ export class FlinkStack extends cdk.Stack {
       sqlServerCredentialsSecret,
       sqlServerEndpoint,
       sqlServerPort,
+      postgresCredentialsSecret,
+      postgresEndpoint,
+      postgresPort
     } = props;
 
     // --- Logs ---
@@ -103,6 +111,7 @@ export class FlinkStack extends cdk.Stack {
     // Allow reading secrets (Kafka + SQL Server)
     kafkaCredentialsSecret.grantRead(flinkRole);
     sqlServerCredentialsSecret.grantRead(flinkRole);
+    postgresCredentialsSecret.grantRead(flinkRole);
 
     // Allow writing logs
     flinkRole.addToPolicy(new iam.PolicyStatement({
@@ -188,6 +197,17 @@ export class FlinkStack extends cdk.Stack {
                 DB_NAME: 'analytics_service_db',
                 TABLE_NAME: 'EventMetricsDev',
                 CREDENTIALS_SECRET_ARN: sqlServerCredentialsSecret.secretArn,
+                USERNAME_KEY: 'username',
+                PASSWORD_KEY: 'password',
+              },
+            },
+            {
+              propertyGroupId: 'postgres',
+              propertyMap: {
+                HOST: postgresEndpoint,
+                PORT: postgresPort,
+                DB_NAME: 'analytics_service_db',
+                CREDENTIALS_SECRET_ARN: postgresCredentialsSecret.secretArn,
                 USERNAME_KEY: 'username',
                 PASSWORD_KEY: 'password',
               },

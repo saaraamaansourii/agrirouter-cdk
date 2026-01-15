@@ -44,6 +44,9 @@ const flinkStack = new FlinkStack(app, 'FlinkStack', {
   sqlServerCredentialsSecret: databaseStack.sqlServerCredentialsSecret,
   sqlServerEndpoint: databaseStack.sqlServerInstance.instanceEndpoint.hostname,
   sqlServerPort: databaseStack.sqlServerInstance.instanceEndpoint.port.toString(),
+  postgresCredentialsSecret: databaseStack.postgresCredentialsSecret,
+  postgresEndpoint: databaseStack.postgresInstance.instanceEndpoint.hostname,
+  postgresPort: databaseStack.postgresInstance.instanceEndpoint.port.toString(),
 });
 flinkStack.addDependency(computeStack);
 flinkStack.addDependency(kafkaStack);
