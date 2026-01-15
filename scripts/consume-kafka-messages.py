@@ -229,7 +229,13 @@ def format_message(topic: str, message_dict: dict, partition: int, offset: int,
         lines.append(f"│  Message ID: {message_dict.get('message_id', 'N/A')}")
         lines.append(f"│  Source: {message_dict.get('source_id', 'N/A')[:36]}...")
         lines.append(f"│  Type: {message_dict.get('message_type', 'N/A')}")
-        lines.append(f"│  Payload Size: {message_dict.get('payload_size', 0):,} bytes")
+        payload_size_raw = message_dict.get('payload_size', 0)
+        try:
+            payload_size = int(payload_size_raw)
+        except (TypeError, ValueError):
+            payload_size = 0
+
+        lines.append(f"│  Payload Size: {payload_size:,} bytes")
         recipients = message_dict.get('recipient_ids', [])
         lines.append(f"│  Recipients: {len(recipients)}")
         
