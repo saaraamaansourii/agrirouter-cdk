@@ -154,7 +154,7 @@ export class FlinkStack extends cdk.Stack {
     // This uses the low-level CFN resource because the L2 construct coverage is limited.
     const application = new kinesisanalyticsv2.CfnApplication(this, 'AgrirouterAnalyticsFlinkApp', {
       applicationName: 'agrirouter-analytics-flink',
-      runtimeEnvironment: 'FLINK-1_15',
+      runtimeEnvironment: 'FLINK-1_20',
       serviceExecutionRole: flinkRole.roleArn,
       applicationConfiguration: {
         applicationCodeConfiguration: {
