@@ -88,7 +88,7 @@ export class FlinkStack extends cdk.Stack {
       ],
     });
 
-    const artifactKey = 'artifacts/app.zip';
+    const artifactKey = 'artifacts/agri_flinkjob.zip';
 
     // Upload local artifact (ZIPFILE) into the dedicated bucket at a stable key.
     // This makes updates predictable: replace `flink-app/app.zip` and redeploy.
